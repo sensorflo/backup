@@ -83,7 +83,7 @@ SECONDARY_REPO_DIR = rf"{BACKUP_DIR}\restic-private-secondary"
 # files that changed since the newest snapshot the secondary has, plus the .arw files of chosen albums
 # in the 'new' trees, which the other repos exclude. Delete it once the secondary is updated again.
 # Recovery: restore that snapshot from the secondary, then the cloud repo's latest snapshot on top.
-CLOUD_REPO = R"G:\My Drive\Backup\restic-delta-dell-xps-15-home-folder"
+CLOUD_REPO = R"G:\My Drive\Backup\restic-private-delta"
 # Written by update-secondary next to the primary repo, read by backup-delta: the newest snapshot the
 # secondary repo has. JSON: {"snapshot": <ID>, "time": <snapshot time>, "copied": <time of the copy>}
 SECONDARY_STATE_NAME = "secondary-latest-snapshot.json"

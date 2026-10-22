@@ -57,4 +57,4 @@ While the secondary repo is out of date, recover from the cloud repo: restore th
 `secondary-latest-snapshot.json` (next to the primary repo) from the secondary repo, then the cloud repo's
 latest snapshot on top of it:
 
-    restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-delta-dell-xps-15-home-folder" --insecure-no-password
+    restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-private-delta" --insecure-no-password

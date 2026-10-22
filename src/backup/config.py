@@ -69,13 +69,16 @@ GIT_REPOS_WITHOUT_OWN_REMOTE = {
 # Programs that may modify files being backed up. backup-files refuses to run while one is running.
 APPS_MODIFYING_FILES = {"darktable.exe", "ansel.exe", "Lightroom.exe", "digikam.exe", "emdb.exe"}
 
+# On each backup drive, the tools (this one and albumflow) own this folder; everything else on the drive,
+# e.g. "Backup manual", is managed by hand. Only the marker file lives in the drive's root.
+BACKUP_DIR = "Backup"
 # The primary repo. Unqualified 'repo' and 'backup' in this tool always mean the primary one.
 # Each repo lives on whichever drive has its marker file in its root.
 REPO_MARKER_NAME = ".backup-destination"
-REPO_DIR = R"Backup\restic-backup-dell-xps-15-home-folder"
+REPO_DIR = rf"{BACKUP_DIR}\restic-private"
 # The secondary repo holds copies of the primary repo's snapshots (restic copy).
 SECONDARY_REPO_MARKER_NAME = ".secondary-backup-destination"
-SECONDARY_REPO_DIR = R"Backup\secondary-restic-backup-dell-xps-15-home-folder"
+SECONDARY_REPO_DIR = rf"{BACKUP_DIR}\restic-private-secondary"
 # The cloud repo is a stopgap while the secondary repo is out of reach, e.g. on holiday: it holds the
 # files that changed since the newest snapshot the secondary has, plus the .arw files of chosen albums
 # in the 'new' trees, which the other repos exclude. Delete it once the secondary is updated again.
@@ -84,10 +87,10 @@ CLOUD_REPO = R"G:\My Drive\Backup\restic-delta-dell-xps-15-home-folder"
 # Written by update-secondary next to the primary repo, read by backup-delta: the newest snapshot the
 # secondary repo has. JSON: {"snapshot": <ID>, "time": <snapshot time>, "copied": <time of the copy>}
 SECONDARY_STATE_NAME = "secondary-latest-snapshot.json"
-# The copy of this tool written to the root of each repo's drive, so a restore works without the project.
+# The copy of this tool written to BACKUP_DIR of each repo's drive, so a restore works without the project.
 SELF_COPY_NAME = "backup.pyz"
 # Written next to it: what the drive is for, how to update the secondary repo, how to restore.
-DRIVE_README_NAME = "BACKUP-README.txt"
+DRIVE_README_NAME = "README.md"
 
 # Optional settings. JSON, missing keys get the defaults of DEFAULT_SETTINGS:
 #   backup_all_includes_delta: whether backup-all ends with backup-delta

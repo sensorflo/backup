@@ -84,59 +84,108 @@ def snapshot_path(path):
 
 
 def drive_readme(drive):
-    """The text of the readme next to the self copy on drive: what the drive is for, how to update the
-    secondary repo, how to restore."""
-    pyz = drive / config.SELF_COPY_NAME
+    """The text of the readme next to the self copy on drive, in Markdown that also reads well as plain
+    text: what the drive is for, how to update the secondary repo, how to restore."""
+    pyz = drive / config.BACKUP_DIR / config.SELF_COPY_NAME
     roles = [name for marker, name in [(config.REPO_MARKER_NAME, "primary"),
                                        (config.SECONDARY_REPO_MARKER_NAME, "secondary")]
              if (drive / marker).exists()]
-    restores = "\n".join(f"       backup restic restore latest:{snapshot_path(source)} --target {source}"
+    restores = "\n".join(f"backup restic restore latest:{snapshot_path(source)} --target {source}"
                          for source in config.source_paths())
-    return f"""\
-This drive holds the {" and ".join(roles)} restic repository of my backup tool (command: backup,
-project: {Path(config.HOME, "src", "backup")}). Next to this file, {config.SELF_COPY_NAME} is a copy of that
-tool which needs only Python and restic, not the project: wherever this text says 'backup', you can
-also use 'python {pyz}'. Both files are rewritten by the tool on each run; don't edit them.
+    home = snapshot_path(config.HOME)
+    return rf"""# Backup
 
-Repositories
-  primary    at home. In the root of its drive: {config.REPO_MARKER_NAME}
-             <drive>:\\{config.REPO_DIR}
-  secondary  in the office, holds copies of the primary's snapshots.
-             In the root of its drive: {config.SECONDARY_REPO_MARKER_NAME}
-             <drive>:\\{config.SECONDARY_REPO_DIR}
-  cloud      stopgap while the secondary is out of reach: what the secondary lacks.
-             {config.CLOUD_REPO}
+This drive holds the {" and ".join(roles)} restic repository of my backup tool (command: `backup`,
+project: `{Path(config.HOME, "src", "backup")}`). `{config.SELF_COPY_NAME}` next to this file is a copy of that
+tool which needs only Python and restic, not the project: wherever this text says `backup`, you can also
+use `python {pyz}`. Both files are rewritten by the tool on each run; don't edit them.
 
-Back up (at home)
-  backup                  same as backup backup-all: backup-vcs, backup-files, and backup-delta if
-                          enabled in {config.SETTINGS_PATH}
+The tools (backup and albumflow) own this `{config.BACKUP_DIR}` folder. Everything else on the drive, e.g.
+`Backup manual`, is managed by hand.
 
-Update the secondary repo (in the office)
-  1. Connect both drives: the primary and the secondary one.
-  2. backup update-secondary
-       or, without the project: python {pyz} update-secondary
-  3. Check the new snapshots are there: backup restic-secondary snapshots
-  Afterwards the cloud repo is no longer needed and can be deleted.
+## Contents
 
-Restore
-  The restic and restic-secondary subcommands run restic on the primary or secondary repo; add any
-  restic arguments. A snapshot holds the full source paths, with the drive letter as top folder, so
-  restore a subtree with latest:<path> to avoid extra folder levels. Try --dry-run first.
-  - List snapshots:         backup restic snapshots
-  - List files:             backup restic ls latest
-  - Full restore, one command per source:
+On the primary drive (marker file in its root: `{config.REPO_MARKER_NAME}`), at home:
+
+- `{Path(config.REPO_DIR).name}`: the primary restic repository.
+- `{config.SECONDARY_STATE_NAME}`: the newest snapshot the secondary repository has.
+- `pictures-new\to-secondary\<topic>\<album>`: the raw files of unfinished albums (in `Pictures\new`
+  or `Pictures\new-old`), which restic excludes. albumflow copies them here.
+- `pictures-new\copied-to-secondary\<topic>\<album>`: albums moved here once copied to the secondary.
+
+On the secondary drive (marker file in its root: `{config.SECONDARY_REPO_MARKER_NAME}`), in the office:
+
+- `{Path(config.SECONDARY_REPO_DIR).name}`: copies of the primary repository's snapshots.
+- `pictures-new\<topic>\<album>`: raw files of albums, kept as long as there is space. An album may go
+  once it is finished, i.e. moved to `Pictures\Originals`, which restic covers.
+
+The cloud repository is a stopgap while the secondary is out of reach. It holds what the secondary lacks:
+`{config.CLOUD_REPO}`
+
+## Back up (at home)
+
+```
+backup
+```
+
+Same as `backup backup-all`: backup-vcs, backup-files, and backup-delta if enabled in
+`{config.SETTINGS_PATH}`.
+
+## Update the secondary (in the office)
+
+1. Connect both drives: the primary and the secondary one.
+2. Copy the snapshots: `backup update-secondary`
+   (or, without the project: `python {pyz} update-secondary`)
+3. Check the new snapshots are there: `backup restic-secondary snapshots`
+4. For now by hand: copy each album in the primary's `pictures-new\to-secondary` to the secondary's
+   `pictures-new`, then move it on the primary to `pictures-new\copied-to-secondary`.
+
+Afterwards the cloud repository is no longer needed and can be deleted.
+
+## Restore
+
+The `restic` and `restic-secondary` subcommands run restic on the primary or secondary repository; add
+any restic arguments. A snapshot holds the full source paths, with the drive letter as top folder, so
+restore a subtree with `latest:<path>` to avoid extra folder levels. Try `--dry-run` first.
+
+List snapshots, list the files of the latest one:
+
+```
+backup restic snapshots
+backup restic ls latest
+```
+
+Full restore, one command per source:
+
+```
 {restores}
-  - One folder into a temporary place:
-       backup restic restore "latest:{snapshot_path(config.HOME)}/Documents/some folder" --target C:\\restored
-  - From the secondary repo: the same with restic-secondary.
-  - While the secondary is outdated: restore from the secondary the snapshot named in
-    {config.SECONDARY_STATE_NAME} (next to the primary repo), then the cloud repo's latest on top:
-       restic restore latest:{snapshot_path(config.HOME)} --target {config.HOME} --repo "{config.CLOUD_REPO}" --insecure-no-password
+```
 
-Maintenance
-  backup restic forget --prune --keep-last 5 --keep-monthly 10 --verbose --dry-run
-  backup restic prune     after aborting a backup
-  backup -h               all subcommands
+One folder into a temporary place:
+
+```
+backup restic restore "latest:{home}/Documents/some folder" --target C:\restored
+```
+
+From the secondary repository: the same with `restic-secondary`.
+
+While the secondary is outdated: restore from the secondary the snapshot named in
+`{config.SECONDARY_STATE_NAME}` (next to the primary repository), then the cloud repository's latest
+snapshot on top:
+
+```
+restic restore latest:{home} --target {config.HOME} --repo "{config.CLOUD_REPO}" --insecure-no-password
+```
+
+## Maintenance
+
+```
+backup restic forget --prune --keep-last 5 --keep-monthly 10 --verbose --dry-run
+backup restic prune
+backup -h
+```
+
+`prune` after aborting a backup; `-h` lists all subcommands.
 """
 
 
@@ -148,12 +197,14 @@ def write_read_only(path, write):
 
 
 def copy_self_to_drive_of(repo):
-    """Write this tool as zipapp to the root of repo's drive, so a restore works without the project:
+    """Write this tool as zipapp to the BACKUP_DIR of repo's drive, so a restore works without the project:
     python backup.pyz restic ..., and next to it a readme."""
     drive = drive_of(repo)
-    write_read_only(drive / config.DRIVE_README_NAME,
+    folder = drive / config.BACKUP_DIR
+    folder.mkdir(exist_ok=True)
+    write_read_only(folder / config.DRIVE_README_NAME,
                     lambda path: path.write_text(drive_readme(drive), encoding="utf-8", newline="\r\n"))
-    target = drive / config.SELF_COPY_NAME
+    target = folder / config.SELF_COPY_NAME
     if target in Path(__file__).parents:
         return  # running from that very copy, e.g. during a restore
     modules = {module.name: module.read_bytes() for module in importlib.resources.files("backup").iterdir()

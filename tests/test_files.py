@@ -175,10 +175,10 @@ def test_running_apps_with_real_tasklist():
 
 def test_backup_files_copies_self_to_drive(tree):
     tree.init_primary()
-    (tree.drive / config.SELF_COPY_NAME).chmod(stat.S_IWRITE)
-    (tree.drive / config.SELF_COPY_NAME).unlink()
+    (tree.drive / config.BACKUP_DIR / config.SELF_COPY_NAME).chmod(stat.S_IWRITE)
+    (tree.drive / config.BACKUP_DIR / config.SELF_COPY_NAME).unlink()
     cli.main(["backup-files"])
-    assert (tree.drive / config.SELF_COPY_NAME).is_file()
+    assert (tree.drive / config.BACKUP_DIR / config.SELF_COPY_NAME).is_file()
 
 
 def test_second_backup_is_incremental_and_sees_changes(tree):

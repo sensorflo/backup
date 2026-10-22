@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from backup import cli, delta, files, repos, vcs
+from backup import cli, config, delta, files, repos, vcs
 
 SUBCOMMANDS = ["backup-all", "backup-files", "backup-vcs", "backup-delta", "init", "init-secondary",
                "update-secondary", "restic", "restic-secondary"]
@@ -135,3 +135,49 @@ def test_bin_wrapper():
     result = subprocess.run(["cmd", "/c", str(wrapper), "-h"], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "backup-all" in result.stdout
+
+
+def test_subcommand_help_names_settings_relative_to_appdata(env, monkeypatch, capsys):
+    monkeypatch.setenv("APPDATA", str(env.settings.parent.parent))
+    monkeypatch.setattr(config, "SETTINGS_PATH", env.settings.parent.parent / "backup" / "config.json")
+    for subcommand in ["backup-delta", "backup-all"]:
+        with pytest.raises(SystemExit):
+            cli.main([subcommand, "-h"])
+        assert R"%APPDATA%\backup\config.json" in " ".join(capsys.readouterr().out.split())
+
+
+def test_settings_path_for_help_outside_appdata(env, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(env.root / "elsewhere"))
+    assert config.settings_path_for_help() == str(env.settings)
+
+
+def test_main_help_survives_percent_signs(env, monkeypatch, capsys):
+    monkeypatch.setenv("APPDATA", str(env.settings.parent.parent))
+    monkeypatch.setattr(config, "SETTINGS_PATH", env.settings.parent.parent / "backup" / "config.json")
+    with pytest.raises(SystemExit) as exit:
+        cli.main(["-h"])
+    assert exit.value.code == 0
+    assert R"%APPDATA%\backup\config.json" in " ".join(capsys.readouterr().out.split())
+
+
+def test_backup_delta_help_names_secondary_state_file(env, capsys):
+    with pytest.raises(SystemExit):
+        cli.main(["backup-delta", "-h"])
+    out = "".join(capsys.readouterr().out.split())  # argparse may wrap at hyphens
+    expected = f"tracked in {env.drive / 'Backup' / 'secondary-latest-snapshot.json'}, written by update-secondary"
+    assert "".join(expected.split()) in out
+
+
+def test_backup_delta_help_without_primary_drive(env, capsys):
+    (env.drive / ".backup-destination").unlink()
+    with pytest.raises(SystemExit):
+        cli.main(["backup-delta", "-h"])
+    out = "".join(capsys.readouterr().out.split())  # argparse may wrap at hyphens
+    expected = R"tracked in <drive with .backup-destination>:\Backup\secondary-latest-snapshot.json"
+    assert "".join(expected.split()) in out
+
+
+def test_subcommand_list_has_no_details(env, capsys):
+    with pytest.raises(SystemExit):
+        cli.main(["-h"])
+    assert "secondary-latest-snapshot.json" not in capsys.readouterr().out

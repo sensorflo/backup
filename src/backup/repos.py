@@ -242,6 +242,12 @@ def secondary_state_path():
     return Path(repo_path()).parent / config.SECONDARY_STATE_NAME
 
 
+def secondary_state_path_for_help():
+    repo = path_for_help(config.REPO_MARKER_NAME, config.REPO_DIR)
+    folder = repo.rpartition("\\")[0]  # string, not Path: it may be the <drive with ...> placeholder
+    return f"{folder}\\{config.SECONDARY_STATE_NAME}"
+
+
 def restic_snapshot(snapshot_id):
     """The snapshot of the primary repo with the given ID (or 'latest') as dict, see restic snapshots --json."""
     snapshots = json.loads(restic_output("snapshots", "--json", snapshot_id))

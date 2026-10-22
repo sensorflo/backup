@@ -205,6 +205,14 @@ def excludes():
     ]
 
 
+def settings_path_for_help():
+    """SETTINGS_PATH as Windows docs customarily write it, e.g. %APPDATA%\\backup\\config.json."""
+    appdata = os.environ.get("APPDATA")
+    if appdata and SETTINGS_PATH.is_relative_to(appdata):
+        return str(Path("%APPDATA%", SETTINGS_PATH.relative_to(appdata)))
+    return str(SETTINGS_PATH)
+
+
 def settings():
     if not SETTINGS_PATH.exists():
         return DEFAULT_SETTINGS

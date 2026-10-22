@@ -36,18 +36,24 @@ def build_parser():
     sub = parser.add_subparsers(dest="subcommand", metavar="<subcommand>",
                                 help="one of the following, default: backup-all")
 
-    def add(name, func, help):
-        sub.add_parser(name, help=help, description=help).set_defaults(func=func)
+    def add(name, func, help, details=""):
+        """details: only in the subcommand's own help, not in the list of subcommands."""
+        # argparse %-formats help, but not description
+        sub.add_parser(name, help=help.replace("%", "%%"),
+                       description=f"{help} {details}".strip()).set_defaults(func=func)
 
+    settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
-        f"backup-vcs, then backup-files, then backup-delta if backup_all_includes_delta in {settings.name}")
+        f"backup-vcs, then backup-files, then backup-delta if backup_all_includes_delta in {settings_for_help}")
     add("backup-files", files.restic_backup_files, "back up files into the repo")
     add("backup-vcs", vcs.backup_vcs,
         "push branches, stashes and uncommitted changes of my version-controlled repos (currently git only) "
         "to backup branches")
     add("backup-delta", delta.restic_backup_delta,
         "back up into the cloud repo the files of the primary repo's latest snapshot that the secondary repo "
-        f"lacks, plus the .arw files of the delta_albums in {settings.name}. Run it right after backup-files.")
+        f"lacks, plus the .arw files of the delta_albums in {settings_for_help}. Run it right after backup-files.",
+        f"What the secondary repo has is tracked in {repos.secondary_state_path_for_help()}, written by "
+        "update-secondary.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,
         "create a new, empty secondary repo with the primary repo's chunker parameters")

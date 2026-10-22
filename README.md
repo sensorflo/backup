@@ -1,0 +1,57 @@
+# backup
+
+Back up my home folder and SD card with restic, and push my unpushed version-controlled work.
+
+Ensure Defender is turned off, or at least that restic.exe and the backup folder are excluded from scanning.
+
+`backup -h` lists the subcommands; no subcommand means `backup-all`. What gets backed up where is in
+[src/backup/config.py](src/backup/config.py). Optional settings (`backup_all_includes_delta`, `delta_albums`)
+are in `%APPDATA%\backup\config.json`.
+
+## Setup
+
+    python -m venv .venv
+    .venv\Scripts\python -m pip install -e ".[dev]"
+
+`%USERPROFILE%\bin\backup.cmd` runs `.venv\Scripts\backup.exe`.
+
+## Tests
+
+    .venv\Scripts\python -m pytest
+
+They need restic and git on the PATH and run real restic and git, but only against temporary folders:
+see [tests/conftest.py](tests/conftest.py).
+
+## Restoring
+
+Every run that touches a repo writes `backup.pyz`, a read-only copy of this tool, to the root of the repo's
+drive. It needs only Python and restic, not this project:
+
+    python E:\backup.pyz restic snapshots
+
+The `restic` and `restic-secondary` subcommands add `--repo` and `--insecure-no-password`. Handy restic
+subcommands:
+
+    snapshots                                     list snapshots
+    ls latest                                     list files of the latest snapshot
+    forget --prune --keep-last 5 --keep-monthly 10 --verbose --dry-run
+    prune                                         after aborting a backup
+
+A snapshot is one tree holding the full source paths, with the drive letter as top folder:
+`/C/Users/Senso/...`, `/S/...`. A restore recreates the tree below `--target`, so pick a subtree with
+`latest:<path>` to avoid extra levels.
+
+Full restore (two commands, one per drive):
+
+    backup restic restore latest:/C/Users/Senso --target C:\Users\Senso
+    backup restic restore latest:/S             --target S:\
+
+One folder into a temporary place (try `--dry-run` first):
+
+    backup restic restore "latest:/C/Users/Senso/Large/Pictures/Pictures/new/party/Baile Leon II 2026" --target C:\restored
+
+While the secondary repo is out of date, recover from the cloud repo: restore the snapshot named in
+`secondary-latest-snapshot.json` (next to the primary repo) from the secondary repo, then the cloud repo's
+latest snapshot on top of it:
+
+    restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-delta-dell-xps-15-home-folder" --insecure-no-password

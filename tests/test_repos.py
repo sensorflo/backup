@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -91,6 +92,7 @@ def test_self_copy_can_restore(env, tmp_path):
     result = subprocess.run([sys.executable, "-I", "-c", script], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert (target / "a.txt").read_text() == "precious"
+    assert (env.drive / config.DRIVE_README_NAME).is_file(), "the readme is written even when running from the copy"
 
 
 def test_self_copy_needs_marker(env, tmp_path):
@@ -206,3 +208,63 @@ def test_update_secondary_failure_keeps_state(env, monkeypatch):
     monkeypatch.setattr(repos, "restic", lambda *args, repo=None: 1 if args[0] == "copy" else real_restic(*args, repo=repo))
     assert cli.main(["update-secondary"]) == 1
     assert not repos.secondary_state_path().exists()
+
+
+def test_snapshot_path():
+    assert repos.snapshot_path(R"C:\Users\Senso") == "/C/Users/Senso"
+    assert repos.snapshot_path("S:\\") == "/S"
+
+
+def test_readme_written_next_to_self_copy(env):
+    env.init_primary()
+    readme = env.drive / config.DRIVE_README_NAME
+    text = readme.read_text(encoding="utf-8")
+    assert not os.access(readme, os.W_OK), "the readme is read-only"
+    assert b"\r\n" in readme.read_bytes(), "Windows line endings, for Notepad"
+    assert text.startswith("This drive holds the primary restic repository")
+    assert f"python {env.drive / config.SELF_COPY_NAME} update-secondary" in text
+
+
+def test_readme_on_secondary_drive(env):
+    env.init_primary()
+    env.init_secondary()
+    text = (env.secondary_drive / config.DRIVE_README_NAME).read_text(encoding="utf-8")
+    assert text.startswith("This drive holds the secondary restic repository")
+
+
+def test_readme_rewritten(env):
+    env.init_primary()
+    readme = env.drive / config.DRIVE_README_NAME
+    readme.chmod(stat.S_IWRITE)
+    readme.write_text("stale")
+    readme.chmod(stat.S_IREAD)
+    cli.main(["restic", "snapshots"])
+    assert readme.read_text(encoding="utf-8").startswith("This drive holds")
+
+
+def test_readme_with_production_paths(env, monkeypatch):
+    monkeypatch.setattr(config, "HOME", R"C:\Users\Senso")
+    monkeypatch.setattr(config, "SD", "S:\\")
+    text = repos.drive_readme(env.drive)
+    lines = [line.strip() for line in text.splitlines()]
+    assert R"backup restic restore latest:/C/Users/Senso --target C:\Users\Senso" in lines
+    assert "backup restic restore latest:/S --target S:\\" in lines
+    assert R"C:\Users\Senso\src\backup" in text
+
+
+def test_readme_full_restore_commands_work(env):
+    """Run the readme's full restore commands after losing the home folder and the SD card."""
+    env.write(env.home / "Documents" / "a.txt", "home data")
+    env.write(env.sd / "Music" / "b.flac", b"sd data")
+    env.init_primary()
+    assert cli.main(["backup-files"]) == 0
+    text = (env.drive / config.DRIVE_README_NAME).read_text(encoding="utf-8")
+    commands = [line.split()[1:] for line in text.splitlines() if line.strip().startswith("backup restic restore latest:/")
+                and "--target" in line and '"' not in line]
+    assert len(commands) == 2
+    shutil.rmtree(env.home)
+    shutil.rmtree(env.sd)
+    for command in commands:
+        assert cli.main(command) == 0
+    assert (env.home / "Documents" / "a.txt").read_text() == "home data"
+    assert (env.sd / "Music" / "b.flac").read_bytes() == b"sd data"

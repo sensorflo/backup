@@ -86,6 +86,8 @@ CLOUD_REPO = R"G:\My Drive\Backup\restic-delta-dell-xps-15-home-folder"
 SECONDARY_STATE_NAME = "secondary-latest-snapshot.json"
 # The copy of this tool written to the root of each repo's drive, so a restore works without the project.
 SELF_COPY_NAME = "backup.pyz"
+# Written next to it: what the drive is for, how to update the secondary repo, how to restore.
+DRIVE_README_NAME = "BACKUP-README.txt"
 
 # Optional settings. JSON, missing keys get the defaults of DEFAULT_SETTINGS:
 #   backup_all_includes_delta: whether backup-all ends with backup-delta

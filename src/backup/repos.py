@@ -77,21 +77,95 @@ def drive_of(repo):
     sys.exit(f"No folder above {repo} has a {config.REPO_MARKER_NAME} or {config.SECONDARY_REPO_MARKER_NAME} file")
 
 
+def snapshot_path(path):
+    """How restic names path in a snapshot: C:\\Users\\Senso -> /C/Users/Senso, S:\\ -> /S."""
+    posix = Path(path).as_posix()
+    return f"/{posix[0]}{posix[2:]}".rstrip("/")
+
+
+def drive_readme(drive):
+    """The text of the readme next to the self copy on drive: what the drive is for, how to update the
+    secondary repo, how to restore."""
+    pyz = drive / config.SELF_COPY_NAME
+    roles = [name for marker, name in [(config.REPO_MARKER_NAME, "primary"),
+                                       (config.SECONDARY_REPO_MARKER_NAME, "secondary")]
+             if (drive / marker).exists()]
+    restores = "\n".join(f"       backup restic restore latest:{snapshot_path(source)} --target {source}"
+                         for source in config.source_paths())
+    return f"""\
+This drive holds the {" and ".join(roles)} restic repository of my backup tool (command: backup,
+project: {Path(config.HOME, "src", "backup")}). Next to this file, {config.SELF_COPY_NAME} is a copy of that
+tool which needs only Python and restic, not the project: wherever this text says 'backup', you can
+also use 'python {pyz}'. Both files are rewritten by the tool on each run; don't edit them.
+
+Repositories
+  primary    at home. In the root of its drive: {config.REPO_MARKER_NAME}
+             <drive>:\\{config.REPO_DIR}
+  secondary  in the office, holds copies of the primary's snapshots.
+             In the root of its drive: {config.SECONDARY_REPO_MARKER_NAME}
+             <drive>:\\{config.SECONDARY_REPO_DIR}
+  cloud      stopgap while the secondary is out of reach: what the secondary lacks.
+             {config.CLOUD_REPO}
+
+Back up (at home)
+  backup                  same as backup backup-all: backup-vcs, backup-files, and backup-delta if
+                          enabled in {config.SETTINGS_PATH}
+
+Update the secondary repo (in the office)
+  1. Connect both drives: the primary and the secondary one.
+  2. backup update-secondary
+       or, without the project: python {pyz} update-secondary
+  3. Check the new snapshots are there: backup restic-secondary snapshots
+  Afterwards the cloud repo is no longer needed and can be deleted.
+
+Restore
+  The restic and restic-secondary subcommands run restic on the primary or secondary repo; add any
+  restic arguments. A snapshot holds the full source paths, with the drive letter as top folder, so
+  restore a subtree with latest:<path> to avoid extra folder levels. Try --dry-run first.
+  - List snapshots:         backup restic snapshots
+  - List files:             backup restic ls latest
+  - Full restore, one command per source:
+{restores}
+  - One folder into a temporary place:
+       backup restic restore "latest:{snapshot_path(config.HOME)}/Documents/some folder" --target C:\\restored
+  - From the secondary repo: the same with restic-secondary.
+  - While the secondary is outdated: restore from the secondary the snapshot named in
+    {config.SECONDARY_STATE_NAME} (next to the primary repo), then the cloud repo's latest on top:
+       restic restore latest:{snapshot_path(config.HOME)} --target {config.HOME} --repo "{config.CLOUD_REPO}" --insecure-no-password
+
+Maintenance
+  backup restic forget --prune --keep-last 5 --keep-monthly 10 --verbose --dry-run
+  backup restic prune     after aborting a backup
+  backup -h               all subcommands
+"""
+
+
+def write_read_only(path, write):
+    if path.exists():
+        path.chmod(stat.S_IWRITE)
+    write(path)
+    path.chmod(stat.S_IREAD)
+
+
 def copy_self_to_drive_of(repo):
     """Write this tool as zipapp to the root of repo's drive, so a restore works without the project:
-    python backup.pyz restic ..."""
-    target = drive_of(repo) / config.SELF_COPY_NAME
+    python backup.pyz restic ..., and next to it a readme."""
+    drive = drive_of(repo)
+    write_read_only(drive / config.DRIVE_README_NAME,
+                    lambda path: path.write_text(drive_readme(drive), encoding="utf-8", newline="\r\n"))
+    target = drive / config.SELF_COPY_NAME
     if target in Path(__file__).parents:
         return  # running from that very copy, e.g. during a restore
     modules = {module.name: module.read_bytes() for module in importlib.resources.files("backup").iterdir()
                if module.name.endswith(".py")}
-    if target.exists():
-        target.chmod(stat.S_IWRITE)
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("__main__.py", "from backup.cli import main\n\nraise SystemExit(main())\n")
-        for name in sorted(modules):
-            archive.writestr(f"backup/{name}", modules[name])
-    target.chmod(stat.S_IREAD)
+
+    def write_zip(path):
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("__main__.py", "from backup.cli import main\n\nraise SystemExit(main())\n")
+            for name in sorted(modules):
+                archive.writestr(f"backup/{name}", modules[name])
+
+    write_read_only(target, write_zip)
 
 
 def restic_init():

@@ -31,6 +31,7 @@ def build_parser():
                                             "Secondary repository: "
                                             f"{repos.path_for_help(config.SECONDARY_REPO_MARKER_NAME, config.SECONDARY_REPO_DIR)}\n"
                                             f"Cloud repository: {config.CLOUD_REPO}\n"
+                                            f"Cloud album raws: {config.CLOUD_PICTURES}\n"
                                             f"Settings: {settings}",
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="subcommand", metavar="<subcommand>",
@@ -51,9 +52,11 @@ def build_parser():
         "to backup branches")
     add("backup-delta", delta.restic_backup_delta,
         "back up into the cloud repo the files of the primary repo's latest snapshot that the secondary repo "
-        f"lacks, plus the .arw files of the delta_albums in {settings_for_help}. Run it right after backup-files.",
+        f"lacks, and copy the .arw files of the delta_albums in {settings_for_help} as plain files to the cloud. "
+        "Run it right after backup-files.",
         f"What the secondary repo has is tracked in {repos.secondary_state_path_for_help()}, written by "
-        "update-secondary.")
+        f"update-secondary. The .arw files are copied from the laptop to {config.CLOUD_PICTURES}\\<topic>\\<album>; "
+        "existing copies are never overwritten or deleted.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,
         "create a new, empty secondary repo with the primary repo's chunker parameters")

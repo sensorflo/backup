@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from backup import config, files, repos
+from backup import config, delta, files, repos
 
 if shutil.which("restic") is None or shutil.which("git") is None:
     pytest.exit("The tests need restic and git on the PATH", returncode=1)
@@ -30,6 +30,7 @@ class Env:
         self.secondary_drive = tmp_path / "drive-secondary"
         self.other_drive = tmp_path / "drive-other"
         self.cloud = tmp_path / "gdrive" / "Backup" / "cloud-repo"
+        self.cloud_pictures = tmp_path / "gdrive" / "Backup" / "pictures-new"
         self.remotes = tmp_path / "remotes"
         self.settings = tmp_path / "settings" / "config.json"
         for folder in (self.home, self.sd, self.drive, self.secondary_drive, self.other_drive, self.remotes):
@@ -115,6 +116,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "HOME", str(home))
     monkeypatch.setattr(config, "SD", str(sd))
     monkeypatch.setattr(config, "CLOUD_REPO", str(tmp_path / "gdrive" / "Backup" / "cloud-repo"))
+    monkeypatch.setattr(config, "CLOUD_PICTURES", str(tmp_path / "gdrive" / "Backup" / "pictures-new"))
     monkeypatch.setattr(config, "SETTINGS_PATH", tmp_path / "settings" / "config.json")
     monkeypatch.setattr(config, "OWN_REMOTE_PREFIXES", ((tmp_path / "remotes").as_posix() + "/",))
     drives = [tmp_path / "drive-primary", tmp_path / "drive-secondary", tmp_path / "drive-other"]
@@ -131,6 +133,15 @@ def isolated(tmp_path, monkeypatch):
         return real_restic_command(args, repo)
 
     monkeypatch.setattr(repos, "restic_command", guarded_restic_command)
+
+    real_copy_file = delta.copy_file
+
+    def guarded_copy_file(source, dest):
+        if not Path(dest).resolve().is_relative_to(allowed):
+            raise AssertionError(f"test tried to copy to {dest} outside of {allowed}")
+        return real_copy_file(source, dest)
+
+    monkeypatch.setattr(delta, "copy_file", guarded_copy_file)
 
     monkeypatch.setenv("RESTIC_CACHE_DIR", str(tmp_path / "tool-state" / "restic-cache"))
     monkeypatch.delenv("RESTIC_REPOSITORY", raising=False)

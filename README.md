@@ -58,3 +58,6 @@ While the secondary repo is out of date, recover from the cloud repo: restore th
 latest snapshot on top of it:
 
     restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-private-delta" --insecure-no-password
+
+The raw files of the `delta_albums` are not in that repo but plain copies in
+`G:\My Drive\Backup\pictures-new\<topic>\<album>`: copy them back to the album folders.

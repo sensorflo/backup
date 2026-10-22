@@ -119,8 +119,12 @@ On the secondary drive (marker file in its root: `{config.SECONDARY_REPO_MARKER_
 - `pictures-new\<topic>\<album>`: raw files of albums, kept as long as there is space. An album may go
   once it is finished, i.e. moved to `Pictures\Originals`, which restic covers.
 
-The cloud repository is a stopgap while the secondary is out of reach. It holds what the secondary lacks:
-`{config.CLOUD_REPO}`
+In the cloud, a stopgap while the secondary is out of reach, written by `backup backup-delta`:
+
+- `{config.CLOUD_REPO}`: restic repository with the files of the primary's latest snapshot that the
+  secondary lacks.
+- `{config.CLOUD_PICTURES}\<topic>\<album>`: plain copies of the raw files of the albums listed in
+  `delta_albums` in `{config.SETTINGS_PATH}`.
 
 ## Back up (at home)
 
@@ -140,7 +144,8 @@ Same as `backup backup-all`: backup-vcs, backup-files, and backup-delta if enabl
 4. For now by hand: copy each album in the primary's `pictures-new\to-secondary` to the secondary's
    `pictures-new`, then move it on the primary to `pictures-new\copied-to-secondary`.
 
-Afterwards the cloud repository is no longer needed and can be deleted.
+Afterwards the cloud repository is no longer needed and can be deleted, and so can the albums in
+`{config.CLOUD_PICTURES}` that are now on the secondary.
 
 ## Restore
 
@@ -176,6 +181,9 @@ snapshot on top:
 ```
 restic restore latest:{home} --target {config.HOME} --repo "{config.CLOUD_REPO}" --insecure-no-password
 ```
+
+The raw files of the albums in `{config.CLOUD_PICTURES}` are plain files: copy them back to the album
+folders.
 
 ## Maintenance
 

@@ -44,8 +44,9 @@ with its own hand-written `README.md`. Only the marker file lives in the root.
 
 ## Later: derive delta_albums automatically
 
-`delta_albums` in `%APPDATA%\backup\config.json` lists by hand the albums whose raws backup-delta backs up to
-the cloud. What the secondary lacks are exactly the albums waiting in the primary's
+`delta_albums` in `%APPDATA%\backup\config.json` lists by hand the albums whose raws backup-delta copies as
+plain files to `G:\My Drive\Backup\pictures-new\<topic>\<album>` (the restic cloud repo gets only what
+backup-files covers). What the secondary lacks are exactly the albums waiting in the primary's
 `Backup\pictures-new\to-secondary\<topic>\<album>`, so backup-delta should take those, reading the raws from
 the laptop's `Pictures\new` or `new-old`. To decide: what if a waiting album is no longer on the laptop.
 

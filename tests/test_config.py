@@ -52,7 +52,9 @@ def test_production_paths(monkeypatch):
     assert config.source_paths() == [R"C:\Users\Senso", "S:\\"]
     assert config.sd_marker() == R"S:\.backup-source-sd"
     assert config.appdata() == R"C:\Users\Senso\AppData"
-    assert config.new_trees() == [R"C:\Users\Senso\Large\Pictures\Pictures\new", R"S:\Large\Pictures\Pictures\new"]
+    assert config.album_trees() == [R"C:\Users\Senso\Large\Pictures\Pictures\new", R"S:\Large\Pictures\Pictures\new",
+                                    R"C:\Users\Senso\Large\Pictures\Pictures\new-old",
+                                    R"S:\Large\Pictures\Pictures\new-old"]
     assert config.git_search_roots() == [R"C:\Users\Senso\src", R"C:\Users\Senso\bin", R"C:\Users\Senso\Documents"]
     assert config.git_repos() == [R"C:\Users\Senso", R"C:\Users\Senso\Large\Pictures"]
 

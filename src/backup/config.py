@@ -80,10 +80,13 @@ REPO_DIR = rf"{BACKUP_DIR}\restic-private"
 SECONDARY_REPO_MARKER_NAME = ".secondary-backup-destination"
 SECONDARY_REPO_DIR = rf"{BACKUP_DIR}\restic-private-secondary"
 # The cloud repo is a stopgap while the secondary repo is out of reach, e.g. on holiday: it holds the
-# files that changed since the newest snapshot the secondary has, plus the .arw files of chosen albums
-# in the 'new' trees, which the other repos exclude. Delete it once the secondary is updated again.
+# files of the primary's latest snapshot that changed since the newest snapshot the secondary has. Delete it
+# once the secondary is updated again.
 # Recovery: restore that snapshot from the secondary, then the cloud repo's latest snapshot on top.
 CLOUD_REPO = R"G:\My Drive\Backup\restic-private-delta"
+# Next to it, plain copies of the .arw files of the delta_albums, which restic excludes:
+# <CLOUD_PICTURES>\<topic>\<album>, like Backup\pictures-new on the backup drives.
+CLOUD_PICTURES = R"G:\My Drive\Backup\pictures-new"
 # Written by update-secondary next to the primary repo, read by backup-delta: the newest snapshot the
 # secondary repo has. JSON: {"snapshot": <ID>, "time": <snapshot time>, "copied": <time of the copy>}
 SECONDARY_STATE_NAME = "secondary-latest-snapshot.json"
@@ -94,7 +97,7 @@ DRIVE_README_NAME = "README.md"
 
 # Optional settings. JSON, missing keys get the defaults of DEFAULT_SETTINGS:
 #   backup_all_includes_delta: whether backup-all ends with backup-delta
-#   delta_albums: albums, relative to the new trees, whose .arw files backup-delta backs up too,
+#   delta_albums: albums, relative to the album trees, whose .arw files backup-delta copies to CLOUD_PICTURES,
 #                 e.g. ["hollidays\\Madeira 2026"]
 SETTINGS_PATH = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"), "backup", "config.json")
 DEFAULT_SETTINGS = {"backup_all_includes_delta": False, "delta_albums": []}
@@ -141,8 +144,9 @@ def appdata():
     return _join(HOME, "AppData")
 
 
-def new_trees():
-    return [_join(HOME, R"Large\Pictures\Pictures\new"), _join(SD, R"Large\Pictures\Pictures\new")]
+def album_trees():
+    """The trees of unfinished albums: <tree>\\<topic>\\<album>. restic excludes their .arw files."""
+    return [_join(root, rf"Large\Pictures\Pictures\{tree}") for tree in ("new", "new-old") for root in (HOME, SD)]
 
 
 def git_search_roots():

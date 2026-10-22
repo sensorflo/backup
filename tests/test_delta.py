@@ -310,3 +310,21 @@ def test_delta_output_names_where_things_go(synced, capfd):
     assert "Collecting for plain copies the .arw files of 1 album in delta_albums" in out
     assert f"For {synced.cloud}: 1 file," in out
     assert f"For {synced.cloud_pictures}: 2 .arw files not yet there" in out
+
+
+def test_delta_output_does_not_list_files(synced, capfd):
+    for i in range(50):
+        synced.write(synced.home / "Documents" / f"changed-{i}.txt", f"{i}")
+    for i in range(20):
+        synced.write(synced.home / "Large" / "Pictures" / "Pictures" / "new" / "party" / "fest" / f"DSC{i}.ARW", b"r")
+    synced.write_settings(delta_albums=["party\\fest"])
+    cli.main(["backup-files"])
+    capfd.readouterr()
+    assert cli.main(["backup-delta"]) == 0
+    out = capfd.readouterr().out
+    assert "changed-" not in out and "DSC" not in out
+    assert "start scan on" not in out
+    assert len(out.splitlines()) < 30
+    assert "party\\fest: 20 .arw files" in out
+    assert "Copied 20 .arw files" in out
+    assert "snapshot" in out and "saved" in out, "restic's summary is still shown"

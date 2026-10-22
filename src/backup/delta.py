@@ -50,13 +50,14 @@ def album_arw_files(album):
 
 
 def plain_copies_todo(albums):
-    """(source, destination) of the albums' .arw files that are not yet in CLOUD_PICTURES. Never overwrites."""
+    """(album, source, destination) of the albums' .arw files that are not yet in CLOUD_PICTURES. Never
+    overwrites."""
     todo = []
     for album in albums:
         for relative, source in sorted(album_arw_files(album).items()):
             dest = Path(config.CLOUD_PICTURES, album, relative)
             if not dest.exists():
-                todo.append((source, dest))
+                todo.append((album, source, dest))
             elif dest.stat().st_size != source.stat().st_size:
                 sys.exit(f"{dest} already exists with a different size than {source}")
     return todo
@@ -68,6 +69,24 @@ def copy_file(source, dest):
     part = dest.with_name(dest.name + ".part")
     shutil.copy2(source, part)
     part.replace(dest)
+
+
+def copy_plainly(copies):
+    """Copy the (album, source, destination) of plain_copies_todo: one line per album, and in a terminal a
+    progress line updated in place, instead of a line per file."""
+    total = sum(source.stat().st_size for _, source, _ in copies)
+    done = 0
+    for album in dict.fromkeys(album for album, _, _ in copies):
+        files = [source for name, source, _ in copies if name == album]
+        print(f"  {album}: {plural(len(files), '.arw file')}, {sum(f.stat().st_size for f in files) / 2**30:.1f} GiB")
+    for i, (_, source, dest) in enumerate(copies, 1):
+        copy_file(source, dest)
+        done += source.stat().st_size
+        if sys.stdout.isatty():
+            print(f"\r  copied {i}/{len(copies)}, {done / 2**30:.1f} of {total / 2**30:.1f} GiB", end="", flush=True)
+    if sys.stdout.isatty():
+        print()
+    print(f"Copied {plural(len(copies), '.arw file')}, {total / 2**30:.1f} GiB, to {config.CLOUD_PICTURES}")
 
 
 def folder_size(folder):
@@ -100,7 +119,7 @@ def restic_backup_delta():
     size = sum(os.path.getsize(path) for path in files)
     # Upper bound: what earlier runs already uploaded is deduplicated
     restic_needed = max(0, size - (folder_size(cloud_repo) if Path(cloud_repo).exists() else 0))
-    copies_size = sum(source.stat().st_size for source, _ in copies)
+    copies_size = sum(source.stat().st_size for _, source, _ in copies)
     print(f"For {cloud_repo}: {plural(len(files), 'file')}, {size / 2**30:.1f} GiB, of which at most "
           f"{restic_needed / 2**30:.1f} GiB new.")
     print(f"For {config.CLOUD_PICTURES}: {plural(len(copies), '.arw file')} not yet there, "
@@ -117,9 +136,9 @@ def restic_backup_delta():
         print("Nothing to back up.")
         return 0
     exit_code = backup_to_cloud_repo(files, base) if files else 0
-    for i, (source, dest) in enumerate(copies, 1):
-        print(f"[{i}/{len(copies)}] {source} -> {dest}")
-        copy_file(source, dest)
+    if copies:
+        print(f"Copying to {config.CLOUD_PICTURES}:")
+        copy_plainly(copies)
     return exit_code
 
 
@@ -132,7 +151,9 @@ def backup_to_cloud_repo(files, base):
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as files_from:
         files_from.write("\n".join(sorted(files)))
     try:
+        # No --verbose: restic would print all the thousands of paths of files_from, twice
+        print(f"Backing up {plural(len(files), 'file')} into {cloud_repo}:")
         return repos.restic("backup", "--files-from-verbatim", files_from.name, "--tag", f"delta-from-{base['short_id']}",
-                            "--verbose", repo=cloud_repo)
+                            repo=cloud_repo)
     finally:
         os.unlink(files_from.name)

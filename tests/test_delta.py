@@ -297,3 +297,16 @@ def test_snapshot_files_of_real_snapshot(env):
     repos.restic("backup", str(env.home))
     files = delta.snapshot_files("latest")
     assert files == {restic_path(env.home / "a.txt"): (5, 1_700_000_000.25)}
+
+
+def test_delta_output_names_where_things_go(synced, capfd):
+    synced.write_settings(delta_albums=["trip"])
+    synced.write(synced.home / "Documents" / "new.txt", "new")
+    cli.main(["backup-files"])
+    capfd.readouterr()
+    assert cli.main(["backup-delta"]) == 0
+    out = capfd.readouterr().out
+    assert "Collecting for the cloud repo the files of snapshot" in out
+    assert "Collecting for plain copies the .arw files of 1 album in delta_albums" in out
+    assert f"For {synced.cloud}: 1 file," in out
+    assert f"For {synced.cloud_pictures}: 2 .arw files not yet there" in out

@@ -74,6 +74,10 @@ def folder_size(folder):
     return sum(path.stat().st_size for path in Path(folder).rglob("*") if path.is_file())
 
 
+def plural(count, noun):
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
 def free_space(path):
     return shutil.disk_usage(Path(path).anchor).free
 
@@ -87,18 +91,20 @@ def restic_backup_delta():
     base = repos.restic_snapshot(json.loads(state_path.read_text(encoding="utf-8"))["snapshot"])
     albums = config.settings()["delta_albums"]
     latest = repos.restic_snapshot("latest")
-    print(f"Collecting files new in snapshot {latest['short_id']} ({latest['time'][:16]}) compared to "
-          f"{base['short_id']} ({base['time'][:16]}), and the .arw files of {len(albums)} albums ...")
+    print(f"Collecting for the cloud repo the files of snapshot {latest['short_id']} ({latest['time'][:16]}) "
+          f"that are new compared to the secondary's {base['short_id']} ({base['time'][:16]}) ...")
     files = {path for path in new_files(base["id"], latest["id"]) if os.path.isfile(path)}
+    print(f"Collecting for plain copies the .arw files of {plural(len(albums), 'album')} in delta_albums ...")
     copies = plain_copies_todo(albums)
     cloud_repo = config.CLOUD_REPO
     size = sum(os.path.getsize(path) for path in files)
     # Upper bound: what earlier runs already uploaded is deduplicated
     restic_needed = max(0, size - (folder_size(cloud_repo) if Path(cloud_repo).exists() else 0))
     copies_size = sum(source.stat().st_size for source, _ in copies)
-    print(f"For {cloud_repo}: {len(files)} files, {size / 2**30:.1f} GiB, of which at most "
+    print(f"For {cloud_repo}: {plural(len(files), 'file')}, {size / 2**30:.1f} GiB, of which at most "
           f"{restic_needed / 2**30:.1f} GiB new.")
-    print(f"For {config.CLOUD_PICTURES}: {len(copies)} .arw files not yet there, {copies_size / 2**30:.1f} GiB.")
+    print(f"For {config.CLOUD_PICTURES}: {plural(len(copies), '.arw file')} not yet there, "
+          f"{copies_size / 2**30:.1f} GiB.")
     needed = {}
     for path, amount in ((cloud_repo, restic_needed), (config.CLOUD_PICTURES, copies_size)):
         needed[Path(path).anchor] = needed.get(Path(path).anchor, 0) + amount

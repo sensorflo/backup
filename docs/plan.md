@@ -42,6 +42,13 @@ with its own hand-written `README.md`. Only the marker file lives in the root.
 - To do: `backup update-secondary` copies `to-secondary` to the secondary and moves the album to
   `copied-to-secondary` on the primary, since that is when both drives are connected. Until then, by hand.
 
+## Later: derive delta_albums automatically
+
+`delta_albums` in `%APPDATA%\backup\config.json` lists by hand the albums whose raws backup-delta backs up to
+the cloud. What the secondary lacks are exactly the albums waiting in the primary's
+`Backup\pictures-new\to-secondary\<topic>\<album>`, so backup-delta should take those, reading the raws from
+the laptop's `Pictures\new` or `new-old`. To decide: what if a waiting album is no longer on the laptop.
+
 ## To do: regular integrity checks of the restic repos
 
 The primary and the secondary repo should be checked for integrity regularly and automatically, so a

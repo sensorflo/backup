@@ -34,6 +34,18 @@ The album trees mirror `Pictures\new\<topic>\<album>`. Today they are flat (`for
   `for-backup-disc` and `already-on-backup-disc` into `Backup\new-raw\` needs albumflow's `BACKUP_DIR`
   changed at the same time.
 
+## To do: regular integrity checks of the restic repos
+
+The primary and the secondary repo should be checked for integrity regularly and automatically, so a
+damaged repo is noticed long before a restore needs it. To decide:
+
+- What to run: `restic check` (structure only, fast), or with `--read-data-subset` (e.g. `1/12` each time,
+  so all data gets read over twelve runs), or occasionally a full `--read-data`.
+- When: as part of `backup-all` and `update-secondary` (the drives are connected then anyway), e.g. when
+  the last check of that repo is older than some days, with the time of the last check kept next to the
+  repo, like `secondary-latest-snapshot.json`.
+- How a failure is reported, so it can't be overlooked.
+
 ## To discuss: making room on the drives
 
 Both drives are always more or less full. Before copying an album to the secondary I usually have to delete

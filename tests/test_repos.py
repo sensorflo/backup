@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 import backup
-from backup import cli, config, repos
+from backup import albums, cli, config, repos
 from conftest import restic_path, snapshots
 
 
@@ -171,6 +171,18 @@ def test_update_secondary_copies_snapshots_and_writes_state(env):
     assert env.snapshot_files(env.secondary_repo) == {"home/a.txt", "home/b.txt"}
 
 
+def test_update_secondary_runs_albumflow_for_the_album_raws(env, monkeypatch):
+    env.init_primary()
+    env.init_secondary()
+    env.write(env.home / "a.txt", "1")
+    backup_home(env)
+    assert cli.main(["update-secondary"]) == 0
+    assert albums.calls == [["update-secondary"]]
+    monkeypatch.setattr(albums, "albumflow", lambda *args: 2)
+    assert cli.main(["update-secondary"]) == 2
+    assert repos.secondary_state_path().exists(), "the snapshots were copied all the same"
+
+
 def test_update_secondary_twice_copies_only_new(env):
     env.init_primary()
     env.init_secondary()
@@ -208,6 +220,7 @@ def test_update_secondary_failure_keeps_state(env, monkeypatch):
     monkeypatch.setattr(repos, "restic", lambda *args, repo=None: 1 if args[0] == "copy" else real_restic(*args, repo=repo))
     assert cli.main(["update-secondary"]) == 1
     assert not repos.secondary_state_path().exists()
+    assert albums.calls == [], "no album raws without the snapshots"
 
 
 def test_snapshot_path():

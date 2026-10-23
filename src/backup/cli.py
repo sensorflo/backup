@@ -52,16 +52,18 @@ def build_parser():
         "to backup branches")
     add("backup-delta", delta.restic_backup_delta,
         "back up into the cloud repo the files of the primary repo's latest snapshot that the secondary repo "
-        f"lacks, and copy the .arw files of the delta_albums in {settings_for_help} as plain files to the cloud. "
+        "lacks, then run albumflow update-cloud, which copies the album raws the secondary lacks to the cloud. "
         "Run it right after backup-files.",
         f"What the secondary repo has is tracked in {repos.secondary_state_path_for_help()}, written by "
-        f"update-secondary. The .arw files are copied from the laptop to {config.CLOUD_PICTURES}\\<topic>\\<album>; "
-        "existing copies are never overwritten or deleted.")
+        f"update-secondary. albumflow copies the albums in the primary's Backup\\pictures-new\\to-secondary to "
+        f"{config.CLOUD_PICTURES}\\<topic>\\<album>; existing copies are never overwritten or deleted. "
+        f"backup-all runs it while backup_all_includes_delta is set in {settings_for_help}.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,
         "create a new, empty secondary repo with the primary repo's chunker parameters")
     add("update-secondary", repos.restic_update_secondary,
-        "copy snapshots missing in the secondary repo from the primary repo")
+        "copy snapshots missing in the secondary repo from the primary repo, then run albumflow "
+        "update-secondary, which copies the album raws the secondary lacks and removes both drives")
     # Only for the help: main() passes their arguments to restic before argparse could reject restic's options
     sub.add_parser("restic", help="run restic with the remaining arguments on the repo")
     sub.add_parser("restic-secondary", help="run restic with the remaining arguments on the secondary repo")

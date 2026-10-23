@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from backup import cli, config, delta, repos
+from backup import albums, cli, config, delta, repos
 from conftest import restic_path, snapshot_files, snapshots
 
 DAY = 24 * 3600
@@ -62,25 +62,36 @@ def test_delta_tagged_with_base_snapshot(synced):
     assert snapshot["tags"] == [f"delta-from-{base[:8]}"]
 
 
-def plain_copies(env):
-    """{path relative to CLOUD_PICTURES: content} of the plain copies."""
-    return {path.relative_to(env.cloud_pictures).as_posix(): path.read_bytes()
-            for path in env.cloud_pictures.rglob("*") if path.is_file()}
-
-
-def test_delta_copies_album_arw_files_plainly_from_all_album_trees(synced):
-    synced.write_settings(delta_albums=["trip"])
+def test_delta_runs_albumflow_for_the_album_raws(synced):
     synced.write(synced.home / "Documents" / "new.txt", "new")
     cli.main(["backup-files"])
+    albums.calls.clear()
     assert cli.main(["backup-delta"]) == 0
-    assert plain_copies(synced) == {"trip/a/DSC1.ARW": b"raw1", "trip/DSC2.arw": b"raw2"}
+    assert albums.calls == [["update-cloud"]]
     assert cloud_files(synced) == {"home/Documents/new.txt"}, "the restic cloud repo gets no raws"
 
 
+def test_delta_runs_albumflow_also_without_changes_and_after_a_failure(synced, monkeypatch):
+    albums.calls.clear()
+    cli.main(["backup-files"])
+    assert cli.main(["backup-delta"]) == 0
+    synced.write(synced.home / "Documents" / "new.txt", "new")
+    cli.main(["backup-files"])
+    monkeypatch.setattr(delta, "backup_to_cloud_repo", lambda files, base: 1)
+    assert cli.main(["backup-delta"]) == 1
+    assert albums.calls == [["update-cloud"], ["update-cloud"]]
+
+
+def test_delta_fails_when_albumflow_fails(synced, monkeypatch):
+    monkeypatch.setattr(albums, "albumflow", lambda *args: 2)
+    assert cli.main(["backup-delta"]) == 2
+
+
+
+
 def test_cloud_repo_gets_only_what_backup_files_covers(synced):
-    """However the albums are configured, the restic cloud repo holds a subset of the primary's latest
-    snapshot, so backup-delta and backup-files include and exclude the same files."""
-    synced.write_settings(delta_albums=["trip", "other"])
+    """The restic cloud repo holds a subset of the primary's latest snapshot, so backup-delta and
+    backup-files include and exclude the same files."""
     change_files(synced)
     synced.write(synced.home / "Large" / "Pictures" / "Pictures" / "new" / "trip" / "DSC9.ARW", b"raw9")
     synced.write(synced.home / "Downloads" / "setup.exe", "excluded")
@@ -90,61 +101,18 @@ def test_cloud_repo_gets_only_what_backup_files_covers(synced):
     assert not any(path.lower().endswith(".arw") for path in cloud_files(synced))
 
 
-def test_delta_album_in_subfolder(synced):
-    synced.write_settings(delta_albums=["trip\\a"])
-    cli.main(["backup-files"])
-    assert cli.main(["backup-delta"]) == 0
-    assert plain_copies(synced) == {"trip/a/DSC1.ARW": b"raw1"}
-    assert not synced.cloud.exists(), "nothing new for restic, so no cloud repo"
 
 
-def test_delta_album_in_new_old(synced):
-    synced.write(synced.home / "Large" / "Pictures" / "Pictures" / "new-old" / "party" / "fest" / "X.ARW", b"old")
-    synced.write_settings(delta_albums=["party\\fest"])
-    assert cli.main(["backup-delta"]) == 0
-    assert plain_copies(synced) == {"party/fest/X.ARW": b"old"}
 
 
-def test_delta_copies_only_missing_and_never_overwrites(synced):
-    synced.write_settings(delta_albums=["trip"])
-    cli.main(["backup-delta"])
-    copy = synced.cloud_pictures / "trip" / "DSC2.arw"
-    os.utime(copy, (1_000_000_000, 1_000_000_000))
-    synced.write(synced.home / "Large" / "Pictures" / "Pictures" / "new" / "trip" / "a" / "DSC4.ARW", b"raw4")
-    assert cli.main(["backup-delta"]) == 0
-    assert os.path.getmtime(copy) == 1_000_000_000, "the existing copy was not touched"
-    assert plain_copies(synced)["trip/a/DSC4.ARW"] == b"raw4"
 
 
-def test_delta_refuses_existing_copy_of_other_size(synced):
-    synced.write_settings(delta_albums=["trip"])
-    synced.write(synced.cloud_pictures / "trip" / "DSC2.arw", b"different")
-    with pytest.raises(SystemExit, match="already exists with a different size"):
-        cli.main(["backup-delta"])
-    assert (synced.cloud_pictures / "trip" / "DSC2.arw").read_bytes() == b"different"
-    assert not (synced.cloud_pictures / "trip" / "a").exists(), "checked before copying anything"
 
 
-def test_delta_refuses_album_differing_between_trees(synced):
-    synced.write(synced.sd / "Large" / "Pictures" / "Pictures" / "new" / "trip" / "a" / "DSC1.ARW", b"other size")
-    synced.write_settings(delta_albums=["trip"])
-    with pytest.raises(SystemExit, match="differ, but would both be copied to the same place"):
-        cli.main(["backup-delta"])
 
 
-def test_delta_replaces_leftover_part_file(synced):
-    synced.write_settings(delta_albums=["trip"])
-    synced.write(synced.cloud_pictures / "trip" / "DSC2.arw.part", b"interrupted")
-    assert cli.main(["backup-delta"]) == 0
-    assert plain_copies(synced) == {"trip/a/DSC1.ARW": b"raw1", "trip/DSC2.arw": b"raw2"}
 
 
-def test_delta_missing_album_refuses(synced):
-    synced.write_settings(delta_albums=["no such album"])
-    with pytest.raises(SystemExit, match="Album no such album not found"):
-        cli.main(["backup-delta"])
-    assert not synced.cloud.exists()
-    assert not synced.cloud_pictures.exists()
 
 
 def test_delta_skips_files_deleted_since_the_snapshot(synced):
@@ -180,7 +148,7 @@ def test_delta_repeated_runs_add_snapshots_to_existing_cloud_repo(synced):
 def test_delta_without_changes(synced, capfd):
     cli.main(["backup-files"])
     assert cli.main(["backup-delta"]) == 0
-    assert "Nothing to back up" in capfd.readouterr().out
+    assert "Nothing new for the cloud repo" in capfd.readouterr().out
     assert not synced.cloud.exists()
 
 
@@ -208,14 +176,6 @@ def test_delta_refuses_when_not_enough_space(synced, monkeypatch, capfd):
     assert not synced.cloud.exists()
 
 
-def test_delta_space_check_counts_plain_copies(synced, monkeypatch):
-    synced.write_settings(delta_albums=["trip"])  # 8 bytes of raws
-    monkeypatch.setattr(delta, "free_space", lambda path: 7)
-    with pytest.raises(SystemExit, match="Not enough space"):
-        cli.main(["backup-delta"])
-    assert not synced.cloud_pictures.exists()
-    monkeypatch.setattr(delta, "free_space", lambda path: 8)
-    assert cli.main(["backup-delta"]) == 0
 
 
 def test_delta_space_check_counts_existing_cloud_repo(synced, monkeypatch):
@@ -300,31 +260,23 @@ def test_snapshot_files_of_real_snapshot(env):
 
 
 def test_delta_output_names_where_things_go(synced, capfd):
-    synced.write_settings(delta_albums=["trip"])
     synced.write(synced.home / "Documents" / "new.txt", "new")
     cli.main(["backup-files"])
     capfd.readouterr()
     assert cli.main(["backup-delta"]) == 0
     out = capfd.readouterr().out
     assert "Collecting for the cloud repo the files of snapshot" in out
-    assert "Collecting for plain copies the .arw files of 1 album in delta_albums" in out
     assert f"For {synced.cloud}: 1 file," in out
-    assert f"For {synced.cloud_pictures}: 2 .arw files not yet there" in out
 
 
 def test_delta_output_does_not_list_files(synced, capfd):
     for i in range(50):
         synced.write(synced.home / "Documents" / f"changed-{i}.txt", f"{i}")
-    for i in range(20):
-        synced.write(synced.home / "Large" / "Pictures" / "Pictures" / "new" / "party" / "fest" / f"DSC{i}.ARW", b"r")
-    synced.write_settings(delta_albums=["party\\fest"])
     cli.main(["backup-files"])
     capfd.readouterr()
     assert cli.main(["backup-delta"]) == 0
     out = capfd.readouterr().out
-    assert "changed-" not in out and "DSC" not in out
+    assert "changed-" not in out
     assert "start scan on" not in out
     assert len(out.splitlines()) < 30
-    assert "party\\fest: 20 .arw files" in out
-    assert "Copied 20 .arw files" in out
     assert "snapshot" in out and "saved" in out, "restic's summary is still shown"

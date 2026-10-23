@@ -1,26 +1,30 @@
 # backup – plan
 
-Status: discussion notes (2026-10-22).
+Status: discussion notes (2026-10-22, updated 2026-10-23).
 
 ## Responsibilities: backup and albumflow
 
 Decided 2026-10-23, in detail in albumflow's `docs/plan.md` ("Responsibilities: albumflow and the backup
-tool", "Purging albums from the backup drives"). Split by data, not by drive:
+tool", "Purging albums from the backup drives").
 
-- **backup** owns the restic repos (primary, secondary, cloud), their integrity checks, and `backup.pyz`
-  for restores, which so never needs albumflow.
+- **backup is the overall backup**: `backup` is what I call, and it decides what runs when. It owns the
+  restic repos (primary, secondary, cloud), their integrity checks, and `backup.pyz` for restores, which
+  never needs albumflow.
 - **albumflow** owns `Backup\pictures-new` on every destination (primary, secondary, and the plain copies
-  in `G:\My Drive\Backup\pictures-new`): copying the raws of unfinished albums, moving them on to the
-  secondary, the plain cloud copies, and purging.
+  in `G:\My Drive\Backup\pictures-new`) and all knowledge about albums: copying the raws of unfinished
+  albums, moving them on to the secondary, the plain cloud copies, and purging.
+- backup runs albumflow's CLI for the album raws (`albums.py`): `update-secondary` runs
+  `albumflow update-secondary` after copying the snapshots (albumflow then removes both drives),
+  `backup-delta` runs `albumflow update-cloud`. A missing or failing albumflow makes the subcommand fail.
+  albumflow never calls backup. No wrapper scripts.
+- Delta mode: `backup_all_includes_delta` in the settings, on while the secondary is out of reach and the
+  laptop and primary are at increased risk (holidays). The cloud then doubles for the secondary: the
+  restic delta plus albumflow's copies of the albums in the primary's `to-secondary`.
 - Shared contract: only the drive markers and the rule "`Backup\` on a drive belongs to the tools,
   everything else is mine". Each tool defines the markers itself; a comment says the other tool uses the
   same ones (without repeating the names).
-- One action when both drives are connected: `~\bin\update-secondary.cmd` runs `backup update-secondary`,
-  then, if that succeeded, `albumflow update-secondary`, then safely removes both drives. backup never
-  calls albumflow.
-- Likewise for the cloud: a wrapper in `~\bin` runs `backup backup-delta`, then albumflow's plain cloud
-  copies. To decide then: how it fits with `backup-all` and `backup_all_includes_delta`.
-- Until the separation is done, the work on these parts happens in albumflow's chat only.
+- Until the separation is done (purging still to come), the work on these parts happens in albumflow's
+  chat only.
 
 ## Raw files of the new tree
 
@@ -33,7 +37,7 @@ edit soon. So the backup drives don't distinguish them: their album trees are `<
 the album is in `new` or `new-old` on the laptop. albumflow so far only copies albums from `new`; it
 should cover `new-old` too.
 
-### Tree on the backup drives (done, except for update-secondary copying albums)
+### Tree on the backup drives (done)
 
 The tools (backup and albumflow) own `Backup\`, I own everything else on the drive, e.g. `Backup manual\`
 with its own hand-written `README.md`. Only the marker file lives in the root.
@@ -59,19 +63,13 @@ with its own hand-written `README.md`. Only the marker file lives in the root.
 - `copied-to-secondary` on the primary: keeps the raws of the most recent albums.
 - `pictures-new` on the secondary: keeps an album's raws as long as there is space. Once the album is
   finished it may go, but as late as I can afford.
-- `pictures-new` is albumflow's (see above): `albumflow update-secondary` copies `to-secondary` to the
-  secondary and moves the album to `copied-to-secondary` on the primary; `backup update-secondary` copies
-  only the restic repo. Done, run together by `~\bin\update-secondary.cmd`.
-- The generated `README.md` should say that `pictures-new` is albumflow's.
+- `pictures-new` is albumflow's (see above); `backup update-secondary` runs `albumflow update-secondary`.
 
-## Moves to albumflow: the plain cloud copies of backup-delta
+## Done: the plain cloud copies moved to albumflow
 
-`delta_albums` in `%APPDATA%\backup\config.json` lists by hand the albums whose raws backup-delta copies as
-plain files to `G:\My Drive\Backup\pictures-new\<topic>\<album>` (the restic cloud repo gets only what
-backup-files covers). This part moves to albumflow, which takes the albums waiting in the primary's
-`Backup\pictures-new\to-secondary\<topic>\<album>` instead of a hand-written list. backup-delta then only
-backs up into the cloud restic repo, and `delta_albums` goes away. To decide (in albumflow): what if a
-waiting album is no longer on the laptop.
+`backup-delta` backs up only into the cloud restic repo, then runs `albumflow update-cloud`, which copies the
+albums in the primary's `to-secondary` (the complete imports) to `G:\My Drive\Backup\pictures-new`. The
+hand-written `delta_albums` setting is gone.
 
 ## To do: regular integrity checks of the restic repos
 

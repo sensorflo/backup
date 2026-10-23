@@ -14,7 +14,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from backup import config
+from backup import albums, config
 
 
 def drives():
@@ -125,8 +125,8 @@ In the cloud, a stopgap while the secondary is out of reach, written by `backup 
 
 - `{config.CLOUD_REPO}`: restic repository with the files of the primary's latest snapshot that the
   secondary lacks.
-- `{config.CLOUD_PICTURES}\<topic>\<album>`: plain copies of the raw files of the albums listed in
-  `delta_albums` in `{config.SETTINGS_PATH}`.
+- `{config.CLOUD_PICTURES}\<topic>\<album>`: plain copies, made by albumflow, of the albums in the
+  primary's `pictures-new\to-secondary`, i.e. of the raw files the secondary lacks.
 
 ## Back up (at home)
 
@@ -140,14 +140,12 @@ Same as `backup backup-all`: backup-vcs, backup-files, and backup-delta if enabl
 ## Update the secondary (in the office)
 
 1. Connect both drives: the primary and the secondary one.
-2. Copy the snapshots: `backup update-secondary`
-   (or, without the project: `python {pyz} update-secondary`)
+2. `backup update-secondary` (or, without the project: `python {pyz} update-secondary`) copies the
+   snapshots, then runs `albumflow update-secondary`, which copies each album in the primary's
+   `pictures-new\to-secondary` to the secondary's `pictures-new`, moves it on the primary to
+   `pictures-new\copied-to-secondary`, and removes both drives. Without albumflow, the snapshots are
+   still copied; do the albums by hand.
 3. Check the new snapshots are there: `backup restic-secondary snapshots`
-4. Copy the albums' raw files: `albumflow update-secondary` copies each album in the primary's
-   `pictures-new\to-secondary` to the secondary's `pictures-new`, then moves it on the primary to
-   `pictures-new\copied-to-secondary`. Without albumflow, do that by hand.
-
-On the laptop, `update-secondary` (a script in `~\bin`) does steps 2 and 4, then removes both drives.
 
 Afterwards the cloud repository is no longer needed and can be deleted, and so can the albums in
 `{config.CLOUD_PICTURES}` that are now on the secondary.
@@ -283,7 +281,8 @@ def restic_update_secondary():
         return exit_code
     state = {"snapshot": latest["id"], "time": latest["time"], "copied": datetime.datetime.now().astimezone().isoformat()}
     secondary_state_path().write_text(json.dumps(state, indent=2), encoding="utf-8")
-    return 0
+    # The raws of the albums waiting on the primary, which restic excludes; albumflow then removes both drives
+    return albums.albumflow("update-secondary")
 
 
 def restic_passthrough(restic_args, repo):

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from backup import config, delta, files, repos
+from backup import albums, config, files, repos
 
 if shutil.which("restic") is None or shutil.which("git") is None:
     pytest.exit("The tests need restic and git on the PATH", returncode=1)
@@ -134,14 +134,10 @@ def isolated(tmp_path, monkeypatch):
 
     monkeypatch.setattr(repos, "restic_command", guarded_restic_command)
 
-    real_copy_file = delta.copy_file
-
-    def guarded_copy_file(source, dest):
-        if not Path(dest).resolve().is_relative_to(allowed):
-            raise AssertionError(f"test tried to copy to {dest} outside of {allowed}")
-        return real_copy_file(source, dest)
-
-    monkeypatch.setattr(delta, "copy_file", guarded_copy_file)
+    # Never the real albumflow: its calls are recorded in albums.calls, each succeeding
+    calls = []
+    monkeypatch.setattr(albums, "calls", calls, raising=False)
+    monkeypatch.setattr(albums, "albumflow", lambda *args: calls.append(list(args)) or 0)
 
     monkeypatch.setenv("RESTIC_CACHE_DIR", str(tmp_path / "tool-state" / "restic-cache"))
     monkeypatch.delenv("RESTIC_REPOSITORY", raising=False)

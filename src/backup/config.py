@@ -85,8 +85,9 @@ SECONDARY_REPO_DIR = rf"{BACKUP_DIR}\restic-private-secondary"
 # once the secondary is updated again.
 # Recovery: restore that snapshot from the secondary, then the cloud repo's latest snapshot on top.
 CLOUD_REPO = R"G:\My Drive\Backup\restic-private-delta"
-# Next to it, plain copies of the .arw files of the delta_albums, which restic excludes:
-# <CLOUD_PICTURES>\<topic>\<album>, like Backup\pictures-new on the backup drives.
+# Next to it, albumflow's plain copies of the album raws the secondary lacks, which restic excludes:
+# <CLOUD_PICTURES>\<topic>\<album>. albumflow defines the folder too; here it is only named in the help
+# and the README.
 CLOUD_PICTURES = R"G:\My Drive\Backup\pictures-new"
 # Written by update-secondary next to the primary repo, read by backup-delta: the newest snapshot the
 # secondary repo has. JSON: {"snapshot": <ID>, "time": <snapshot time>, "copied": <time of the copy>}
@@ -97,11 +98,10 @@ SELF_COPY_NAME = "backup.pyz"
 DRIVE_README_NAME = "README.md"
 
 # Optional settings. JSON, missing keys get the defaults of DEFAULT_SETTINGS:
-#   backup_all_includes_delta: whether backup-all ends with backup-delta
-#   delta_albums: albums, relative to the album trees, whose .arw files backup-delta copies to CLOUD_PICTURES,
-#                 e.g. ["hollidays\\Madeira 2026"]
+#   backup_all_includes_delta: whether backup-all ends with backup-delta; on while the secondary is out of
+#                              reach and the laptop and the primary drive are at increased risk, e.g. on holiday
 SETTINGS_PATH = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"), "backup", "config.json")
-DEFAULT_SETTINGS = {"backup_all_includes_delta": False, "delta_albums": []}
+DEFAULT_SETTINGS = {"backup_all_includes_delta": False}
 
 # Below AppData, only these (relative to AppData) are backed up, everything else there is excluded:
 # mostly caches and things reinstalling a program recreates. The includes are databases and settings
@@ -143,11 +143,6 @@ def sd_marker():
 
 def appdata():
     return _join(HOME, "AppData")
-
-
-def album_trees():
-    """The trees of unfinished albums: <tree>\\<topic>\\<album>. restic excludes their .arw files."""
-    return [_join(root, rf"Large\Pictures\Pictures\{tree}") for tree in ("new", "new-old") for root in (HOME, SD)]
 
 
 def git_search_roots():

@@ -52,9 +52,6 @@ def test_production_paths(monkeypatch):
     assert config.source_paths() == [R"C:\Users\Senso", "S:\\"]
     assert config.sd_marker() == R"S:\.backup-source-sd"
     assert config.appdata() == R"C:\Users\Senso\AppData"
-    assert config.album_trees() == [R"C:\Users\Senso\Large\Pictures\Pictures\new", R"S:\Large\Pictures\Pictures\new",
-                                    R"C:\Users\Senso\Large\Pictures\Pictures\new-old",
-                                    R"S:\Large\Pictures\Pictures\new-old"]
     assert config.git_search_roots() == [R"C:\Users\Senso\src", R"C:\Users\Senso\bin", R"C:\Users\Senso\Documents"]
     assert config.git_repos() == [R"C:\Users\Senso", R"C:\Users\Senso\Large\Pictures"]
 
@@ -69,5 +66,5 @@ def test_settings_default_when_missing(env):
 
 
 def test_settings_merged_with_defaults(env):
-    env.write_settings(delta_albums=["a\\b"])
-    assert config.settings() == {"backup_all_includes_delta": False, "delta_albums": ["a\\b"]}
+    env.write_settings(backup_all_includes_delta=True)
+    assert config.settings() == {"backup_all_includes_delta": True}

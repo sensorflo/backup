@@ -46,17 +46,20 @@ def build_parser():
     settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
         f"backup-vcs, then backup-files, then backup-delta if backup_all_includes_delta in {settings_for_help}")
-    add("backup-files", files.restic_backup_files, "back up files into the repo")
+    add("backup-files", files.restic_backup_files, "back up files into the repo; doesn't include albumflow backup-raw",
+        "The raws of unfinished albums (Pictures\\new, new-old), which restic excludes, are copied to the backup "
+        "drive by albumflow when importing them (albumflow import, or albumflow backup-raw later).")
     add("backup-vcs", vcs.backup_vcs,
         "push branches, stashes and uncommitted changes of my version-controlled repos (currently git only) "
         "to backup branches")
     add("backup-delta", delta.restic_backup_delta,
         "back up into the cloud repo the files of the primary repo's latest snapshot that the secondary repo "
-        "lacks, then run albumflow update-cloud, which copies the album raws the secondary lacks to the cloud. "
+        "lacks; includes albumflow update-cloud, which copies the album raws the secondary lacks to the cloud. "
         "Run it right after backup-files.",
         f"What the secondary repo has is tracked in {repos.secondary_state_path_for_help()}, written by "
-        f"update-secondary. albumflow copies the albums in the primary's Backup\\pictures-new\\to-secondary to "
-        f"{config.CLOUD_PICTURES}\\<topic>\\<album>; existing copies are never overwritten or deleted. "
+        f"update-secondary. albumflow copies the albums in the primary's Backup\\pictures-new\\to-secondary, and "
+        f"the photos of albums not yet on the primary from the laptop, to {config.CLOUD_PICTURES}\\<topic>\\<album>; "
+        "existing copies are never overwritten or deleted. "
         f"backup-all runs it while backup_all_includes_delta is set in {settings_for_help}.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,

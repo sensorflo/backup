@@ -125,8 +125,9 @@ In the cloud, a stopgap while the secondary is out of reach, written by `backup 
 
 - `{config.CLOUD_REPO}`: restic repository with the files of the primary's latest snapshot that the
   secondary lacks.
-- `{config.CLOUD_PICTURES}\<topic>\<album>`: plain copies, made by albumflow, of the albums in the
-  primary's `pictures-new\to-secondary`, i.e. of the raw files the secondary lacks.
+- `{config.CLOUD_PICTURES}\<topic>\<album>`: plain copies, made by albumflow, of the raw files the
+  secondary lacks: the albums in the primary's `pictures-new\to-secondary`, and photos imported while the
+  primary was out of reach, from the laptop.
 
 ## Back up (at home)
 

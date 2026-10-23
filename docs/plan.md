@@ -2,6 +2,26 @@
 
 Status: discussion notes (2026-10-22).
 
+## Responsibilities: backup and albumflow
+
+Decided 2026-10-23, in detail in albumflow's `docs/plan.md` ("Responsibilities: albumflow and the backup
+tool", "Purging albums from the backup drives"). Split by data, not by drive:
+
+- **backup** owns the restic repos (primary, secondary, cloud), their integrity checks, and `backup.pyz`
+  for restores, which so never needs albumflow.
+- **albumflow** owns `Backup\pictures-new` on every destination (primary, secondary, and the plain copies
+  in `G:\My Drive\Backup\pictures-new`): copying the raws of unfinished albums, moving them on to the
+  secondary, the plain cloud copies, and purging.
+- Shared contract: only the drive markers and the rule "`Backup\` on a drive belongs to the tools,
+  everything else is mine". Each tool defines the markers itself; a comment says the other tool uses the
+  same ones (without repeating the names).
+- One action when both drives are connected: `~\bin\update-secondary.cmd` runs `backup update-secondary`,
+  then, if that succeeded, `albumflow update-secondary`, then safely removes both drives. backup never
+  calls albumflow.
+- Likewise for the cloud: a wrapper in `~\bin` runs `backup backup-delta`, then albumflow's plain cloud
+  copies. To decide then: how it fits with `backup-all` and `backup_all_includes_delta`.
+- Until the separation is done, the work on these parts happens in albumflow's chat only.
+
 ## Raw files of the new tree
 
 restic excludes the .arw files below `Pictures\new` and `Pictures\new-old`, see `config.excludes()`. While
@@ -39,16 +59,19 @@ with its own hand-written `README.md`. Only the marker file lives in the root.
 - `copied-to-secondary` on the primary: keeps the raws of the most recent albums.
 - `pictures-new` on the secondary: keeps an album's raws as long as there is space. Once the album is
   finished it may go, but as late as I can afford.
-- To do: `backup update-secondary` copies `to-secondary` to the secondary and moves the album to
-  `copied-to-secondary` on the primary, since that is when both drives are connected. Until then, by hand.
+- `pictures-new` is albumflow's (see above): `albumflow update-secondary` copies `to-secondary` to the
+  secondary and moves the album to `copied-to-secondary` on the primary; `backup update-secondary` copies
+  only the restic repo. Until albumflow does it, by hand.
+- The generated `README.md` should say that `pictures-new` is albumflow's.
 
-## Later: derive delta_albums automatically
+## Moves to albumflow: the plain cloud copies of backup-delta
 
 `delta_albums` in `%APPDATA%\backup\config.json` lists by hand the albums whose raws backup-delta copies as
 plain files to `G:\My Drive\Backup\pictures-new\<topic>\<album>` (the restic cloud repo gets only what
-backup-files covers). What the secondary lacks are exactly the albums waiting in the primary's
-`Backup\pictures-new\to-secondary\<topic>\<album>`, so backup-delta should take those, reading the raws from
-the laptop's `Pictures\new` or `new-old`. To decide: what if a waiting album is no longer on the laptop.
+backup-files covers). This part moves to albumflow, which takes the albums waiting in the primary's
+`Backup\pictures-new\to-secondary\<topic>\<album>` instead of a hand-written list. backup-delta then only
+backs up into the cloud restic repo, and `delta_albums` goes away. To decide (in albumflow): what if a
+waiting album is no longer on the laptop.
 
 ## To do: regular integrity checks of the restic repos
 
@@ -62,20 +85,8 @@ damaged repo is noticed long before a restore needs it. To decide:
   repo, like `secondary-latest-snapshot.json`.
 - How a failure is reported, so it can't be overlooked.
 
-## To discuss: making room on the drives
+## Moved to albumflow: making room on the drives
 
-Both drives are always more or less full. Before copying an album to the secondary I usually have to delete
-an old album there, and the primary's `copied-to-secondary` needs purging too. How to make that convenient?
-Probably like albumflow's suggestions for the annex: a list of large and old albums to pick from, rather
-than deleting automatically.
-
-Safety rule to consider: an album may only be suggested for deletion from a drive if its raws are covered
-elsewhere, e.g. it is finished (in `Originals`) and a snapshot in the secondary restic repo contains it, or
-another drive still has a verified copy.
-
-Note on "finished": a party album is imported to `new\party\<album>`. When it's finished, the final album
-goes to `Originals\party\<album>`, and the leftovers some people might still want go to
-`new\OnlyForOthers\<album>`, which restic excludes like the rest of `new`. Also, the drives hold the
-complete import (e.g. 9531 raws for Secret Castle 2026), the laptop only what was kept (about 520). So
-"the album is in Originals" doesn't mean all of the drive's raws are covered by restic; what deleting a
-drive copy loses must be part of the discussion.
+Decided 2026-10-23, see albumflow's plan ("Purging albums from the backup drives"): an album may be purged
+from a drive once it is in `Originals`; the loss of the raws only in `new\OnlyForOthers\<album>` and of the
+culled ones is accepted.

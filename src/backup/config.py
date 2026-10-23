@@ -73,7 +73,8 @@ APPS_MODIFYING_FILES = {"darktable.exe", "ansel.exe", "Lightroom.exe", "digikam.
 # e.g. "Backup manual", is managed by hand. Only the marker file lives in the drive's root.
 BACKUP_DIR = "Backup"
 # The primary repo. Unqualified 'repo' and 'backup' in this tool always mean the primary one.
-# Each repo lives on whichever drive has its marker file in its root.
+# Each repo lives on whichever drive has its marker file in its root. albumflow uses the same markers to find
+# the drives for the album raws in Backup\pictures-new, which it owns.
 REPO_MARKER_NAME = ".backup-destination"
 REPO_DIR = rf"{BACKUP_DIR}\restic-private"
 # The secondary repo holds copies of the primary repo's snapshots (restic copy).

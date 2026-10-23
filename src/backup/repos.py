@@ -100,7 +100,8 @@ project: `{Path(config.HOME, "src", "backup")}`). `{config.SELF_COPY_NAME}` next
 tool which needs only Python and restic, not the project: wherever this text says `backup`, you can also
 use `python {pyz}`. Both files are rewritten by the tool on each run; don't edit them.
 
-The tools (backup and albumflow) own this `{config.BACKUP_DIR}` folder. Everything else on the drive, e.g.
+The tools own this `{config.BACKUP_DIR}` folder: backup the restic repositories, albumflow (project:
+`{Path(config.HOME, "src", "albumflow")}`) the `pictures-new` folders. Everything else on the drive, e.g.
 `Backup manual`, is managed by hand.
 
 ## Contents
@@ -111,7 +112,8 @@ On the primary drive (marker file in its root: `{config.REPO_MARKER_NAME}`), at 
 - `{config.SECONDARY_STATE_NAME}`: the newest snapshot the secondary repository has.
 - `pictures-new\to-secondary\<topic>\<album>`: the raw files of unfinished albums (in `Pictures\new`
   or `Pictures\new-old`), which restic excludes. albumflow copies them here.
-- `pictures-new\copied-to-secondary\<topic>\<album>`: albums moved here once copied to the secondary.
+- `pictures-new\copied-to-secondary\<topic>\<album>`: albums albumflow moved here once copied to the
+  secondary.
 
 On the secondary drive (marker file in its root: `{config.SECONDARY_REPO_MARKER_NAME}`), in the office:
 
@@ -141,8 +143,11 @@ Same as `backup backup-all`: backup-vcs, backup-files, and backup-delta if enabl
 2. Copy the snapshots: `backup update-secondary`
    (or, without the project: `python {pyz} update-secondary`)
 3. Check the new snapshots are there: `backup restic-secondary snapshots`
-4. For now by hand: copy each album in the primary's `pictures-new\to-secondary` to the secondary's
-   `pictures-new`, then move it on the primary to `pictures-new\copied-to-secondary`.
+4. Copy the albums' raw files: `albumflow update-secondary` copies each album in the primary's
+   `pictures-new\to-secondary` to the secondary's `pictures-new`, then moves it on the primary to
+   `pictures-new\copied-to-secondary`. Without albumflow, do that by hand.
+
+On the laptop, `update-secondary` (a script in `~\bin`) does steps 2 and 4, then removes both drives.
 
 Afterwards the cloud repository is no longer needed and can be deleted, and so can the albums in
 `{config.CLOUD_PICTURES}` that are now on the secondary.

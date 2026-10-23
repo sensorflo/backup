@@ -61,7 +61,7 @@ with its own hand-written `README.md`. Only the marker file lives in the root.
   finished it may go, but as late as I can afford.
 - `pictures-new` is albumflow's (see above): `albumflow update-secondary` copies `to-secondary` to the
   secondary and moves the album to `copied-to-secondary` on the primary; `backup update-secondary` copies
-  only the restic repo. Until albumflow does it, by hand.
+  only the restic repo. Done, run together by `~\bin\update-secondary.cmd`.
 - The generated `README.md` should say that `pictures-new` is albumflow's.
 
 ## Moves to albumflow: the plain cloud copies of backup-delta

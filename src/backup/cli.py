@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import textwrap
 
 import backup
 from backup import albums, cloud, config, files, repos, vcs
@@ -25,9 +26,23 @@ def backup_all():
 RESTIC_PASSTHROUGH_COMMANDS = {"restic": repos.repo_path, "restic-secondary": repos.secondary_repo_path}
 
 
+class HelpFormatter(argparse.RawDescriptionHelpFormatter):
+    """Lists the commands directly, without a line for <command> above them (as git and pip do)."""
+
+    def _format_action(self, action):
+        if isinstance(action, argparse._SubParsersAction):
+            return "".join(self._format_action(a) for a in action._get_subactions())
+        return super()._format_action(action)
+
+    def _split_lines(self, text, width):
+        # Wrap at spaces only, so names like backup-files aren't split at their hyphen
+        return textwrap.wrap(" ".join(text.split()), width, break_on_hyphens=False)
+
+
 def build_parser():
     settings = config.SETTINGS_PATH
     parser = argparse.ArgumentParser(prog="backup", description=backup.__doc__,
+                                     usage="backup [-h] [<command>] ...",
                                      epilog="backup <command> -h shows the help of a command.\n\n"
                                             "(Primary) Repository: "
                                             f"{repos.path_for_help(config.REPO_MARKER_NAME, config.REPO_DIR)}\n"
@@ -36,10 +51,9 @@ def build_parser():
                                             f"Cloud repository: {config.CLOUD_REPO}\n"
                                             f"Cloud album raws: {config.CLOUD_PICTURES}\n"
                                             f"Settings: {settings}",
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=HelpFormatter)
     parser._positionals.title = "commands"  # instead of "positional arguments"
-    sub = parser.add_subparsers(dest="command", metavar="<command>",
-                                help="one of the following, default: backup-all")
+    sub = parser.add_subparsers(dest="command", metavar="<command>")
 
     def add(name, func, help, details=""):
         """details: only in the command's own help, not in the list of commands."""
@@ -49,7 +63,8 @@ def build_parser():
 
     settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
-        "backup-vcs, then backup-files, then albumflow backup-new --all, then update-cloud if "
+        "the default, without a command: backup-vcs, then backup-files, then albumflow backup-new --all, then "
+        "update-cloud if "
         f"backup_all_includes_update_cloud in {settings_for_help}")
     add("backup-files", files.restic_backup_files,
         "back up files into the repo; doesn't include albumflow backup-new (backup-all does)",

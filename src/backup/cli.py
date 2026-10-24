@@ -6,17 +6,20 @@ import argparse
 import sys
 
 import backup
-from backup import config, delta, files, repos, vcs
+from backup import albums, config, delta, files, repos, vcs
 
 
 def backup_all():
     vcs_exit_code = vcs.backup_vcs()
     files_exit_code = files.restic_backup_files()
+    # The raws of unfinished albums, which restic excludes; before the delta, whose cloud copies take them
+    # from the primary
+    raw_exit_code = albums.albumflow("backup-raw", "--all", "--no-eject")
     # restic's exit code 3: some files could not be read, but the snapshot was created
     if config.settings()["backup_all_includes_delta"] and files_exit_code in (0, 3):
         delta_exit_code = delta.restic_backup_delta()
-        return vcs_exit_code or delta_exit_code or files_exit_code
-    return vcs_exit_code or files_exit_code
+        return vcs_exit_code or raw_exit_code or delta_exit_code or files_exit_code
+    return vcs_exit_code or raw_exit_code or files_exit_code
 
 
 RESTIC_PASSTHROUGH_SUBCOMMANDS = {"restic": repos.repo_path, "restic-secondary": repos.secondary_repo_path}
@@ -45,10 +48,13 @@ def build_parser():
 
     settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
-        f"backup-vcs, then backup-files, then backup-delta if backup_all_includes_delta in {settings_for_help}")
-    add("backup-files", files.restic_backup_files, "back up files into the repo; doesn't include albumflow backup-raw",
+        "backup-vcs, then backup-files, then albumflow backup-raw --all, then backup-delta if "
+        f"backup_all_includes_delta in {settings_for_help}")
+    add("backup-files", files.restic_backup_files,
+        "back up files into the repo; doesn't include albumflow backup-raw (backup-all does)",
         "The raws of unfinished albums (Pictures\\new, new-old), which restic excludes, are copied to the backup "
-        "drive by albumflow when importing them (albumflow import, or albumflow backup-raw later).")
+        "drive by albumflow: when importing them, by albumflow backup-raw, or by backup-all running "
+        "albumflow backup-raw --all.")
     add("backup-vcs", vcs.backup_vcs,
         "push branches, stashes and uncommitted changes of my version-controlled repos (currently git only) "
         "to backup branches")

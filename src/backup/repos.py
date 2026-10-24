@@ -135,7 +135,8 @@ In the cloud, a stopgap while the secondary is out of reach, written by `backup 
 backup
 ```
 
-Same as `backup backup-all`: backup-vcs, backup-files, and backup-delta if enabled in
+Same as `backup backup-all`: backup-vcs, backup-files, `albumflow backup-raw --all` (the raws of
+unfinished albums, to this drive's `pictures-new\to-secondary`), and backup-delta if enabled in
 `{config.SETTINGS_PATH}`.
 
 ## Update the secondary (in the office)

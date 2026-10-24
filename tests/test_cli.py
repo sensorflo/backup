@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from backup import cli, config, delta, files, repos, vcs
+from backup import albums, cli, config, delta, files, repos, vcs
 
 SUBCOMMANDS = ["backup-all", "backup-files", "backup-vcs", "backup-delta", "init", "init-secondary",
                "update-secondary", "restic", "restic-secondary"]
@@ -54,6 +54,16 @@ def test_backup_all_with_delta(env, calls):
     env.write_settings(backup_all_includes_delta=True)
     assert cli.main([]) == 0
     assert calls == ["backup_vcs", "restic_backup_files", "restic_backup_delta"]
+    assert albums.calls == [["backup-raw", "--all", "--no-eject"]]
+
+
+def test_backup_all_backs_up_album_raws_also_when_restic_fails(env, calls, monkeypatch):
+    calls.codes["restic_backup_files"] = 1
+    assert cli.main([]) == 1
+    assert albums.calls == [["backup-raw", "--all", "--no-eject"]]
+    monkeypatch.setattr(albums, "albumflow", lambda *args: 2)
+    calls.codes["restic_backup_files"] = 0
+    assert cli.main([]) == 2
 
 
 @pytest.mark.parametrize("vcs_code, files_code, delta_code, delta_runs, result", [

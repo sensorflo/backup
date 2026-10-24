@@ -1,3 +1,5 @@
+import pytest
+
 from backup import config
 
 # The exclude list of the original single-file backup.py, to prove the move kept it exactly.
@@ -66,5 +68,11 @@ def test_settings_default_when_missing(env):
 
 
 def test_settings_merged_with_defaults(env):
-    env.write_settings(backup_all_includes_delta=True)
-    assert config.settings() == {"backup_all_includes_delta": True}
+    env.write_settings(backup_all_includes_update_cloud=True)
+    assert config.settings() == {"backup_all_includes_update_cloud": True}
+
+
+def test_unknown_setting_is_an_error(env):
+    env.write_settings(backup_all_includes_delta=True)  # the old name
+    with pytest.raises(SystemExit, match="Unknown settings in .*: backup_all_includes_delta"):
+        config.settings()

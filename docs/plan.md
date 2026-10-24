@@ -15,9 +15,9 @@ tool", "Purging albums from the backup drives").
   albums, moving them on to the secondary, the plain cloud copies, and purging.
 - backup runs albumflow's CLI for the album raws (`albums.py`): `update-secondary` runs
   `albumflow update-secondary` after copying the snapshots (albumflow then removes both drives),
-  `backup-delta` runs `albumflow update-cloud`. A missing or failing albumflow makes the subcommand fail.
+  `update-cloud` runs `albumflow update-cloud`. A missing or failing albumflow makes the subcommand fail.
   albumflow never calls backup. No wrapper scripts.
-- Delta mode: `backup_all_includes_delta` in the settings, on while the secondary is out of reach and the
+- Delta mode: `backup_all_includes_update_cloud` in the settings, on while the secondary is out of reach and the
   laptop and primary are at increased risk (holidays). The cloud then doubles for the secondary: the
   restic delta plus albumflow's copies of the albums in the primary's `to-secondary`.
 - Shared contract: only the drive markers and the rule "`Backup\` on a drive belongs to the tools,
@@ -66,7 +66,7 @@ with its own hand-written `README.md`. Only the marker file lives in the root.
 
 ## Done: the plain cloud copies moved to albumflow
 
-`backup-delta` backs up only into the cloud restic repo, then runs `albumflow update-cloud`, which copies the
+`update-cloud` backs up only into the cloud restic repo, then runs `albumflow update-cloud`, which copies the
 albums in the primary's `to-secondary` (the complete imports) to `G:\My Drive\Backup\pictures-new`. The
 hand-written `delta_albums` setting is gone.
 

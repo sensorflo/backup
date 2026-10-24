@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 HOME = R"C:\Users\Senso"
@@ -84,12 +85,12 @@ SECONDARY_REPO_DIR = rf"{BACKUP_DIR}\restic-private-secondary"
 # files of the primary's latest snapshot that changed since the newest snapshot the secondary has. Delete it
 # once the secondary is updated again.
 # Recovery: restore that snapshot from the secondary, then the cloud repo's latest snapshot on top.
-CLOUD_REPO = R"G:\My Drive\Backup\restic-private-delta"
+CLOUD_REPO = R"G:\My Drive\Backup\restic-private-cloud"
 # Next to it, albumflow's plain copies of the album raws the secondary lacks, which restic excludes:
 # <CLOUD_PICTURES>\<topic>\<album>. albumflow defines the folder too; here it is only named in the help
 # and the README.
 CLOUD_PICTURES = R"G:\My Drive\Backup\pictures-new"
-# Written by update-secondary next to the primary repo, read by backup-delta: the newest snapshot the
+# Written by update-secondary next to the primary repo, read by update-cloud: the newest snapshot the
 # secondary repo has. JSON: {"snapshot": <ID>, "time": <snapshot time>, "copied": <time of the copy>}
 SECONDARY_STATE_NAME = "secondary-latest-snapshot.json"
 # The copy of this tool written to BACKUP_DIR of each repo's drive, so a restore works without the project.
@@ -98,10 +99,10 @@ SELF_COPY_NAME = "backup.pyz"
 DRIVE_README_NAME = "README.md"
 
 # Optional settings. JSON, missing keys get the defaults of DEFAULT_SETTINGS:
-#   backup_all_includes_delta: whether backup-all ends with backup-delta; on while the secondary is out of
+#   backup_all_includes_update_cloud: whether backup-all ends with update-cloud; on while the secondary is out of
 #                              reach and the laptop and the primary drive are at increased risk, e.g. on holiday
 SETTINGS_PATH = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"), "backup", "config.json")
-DEFAULT_SETTINGS = {"backup_all_includes_delta": False}
+DEFAULT_SETTINGS = {"backup_all_includes_update_cloud": False}
 
 # Below AppData, only these (relative to AppData) are backed up, everything else there is excluded:
 # mostly caches and things reinstalling a program recreates. The includes are databases and settings
@@ -216,4 +217,8 @@ def settings_path_for_help():
 def settings():
     if not SETTINGS_PATH.exists():
         return DEFAULT_SETTINGS
-    return DEFAULT_SETTINGS | json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    # An unknown key is an error, not ignored: e.g. a renamed setting would silently fall back to its default
+    if unknown := sorted(set(data) - set(DEFAULT_SETTINGS)):
+        sys.exit(f"Unknown settings in {SETTINGS_PATH}: {', '.join(unknown)}. Known: {', '.join(DEFAULT_SETTINGS)}")
+    return DEFAULT_SETTINGS | data

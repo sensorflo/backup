@@ -70,7 +70,7 @@ def test_self_copy_runs_without_the_project(env, tmp_path):
     result = subprocess.run([sys.executable, "-I", str(env.drive / config.BACKUP_DIR / config.SELF_COPY_NAME), "-h"],
                             capture_output=True, text=True, cwd=tmp_path)
     assert result.returncode == 0, result.stderr
-    for subcommand in ["backup-all", "backup-files", "backup-vcs", "backup-delta", "init", "init-secondary",
+    for subcommand in ["backup-all", "backup-files", "backup-vcs", "update-cloud", "init", "init-secondary",
                        "update-secondary", "restic", "restic-secondary"]:
         assert subcommand in result.stdout
 

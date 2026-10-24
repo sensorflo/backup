@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from backup import albums, cli, config, delta, files, repos, vcs
+from backup import albums, cli, cloud, config, files, repos, vcs
 
-SUBCOMMANDS = ["backup-all", "backup-files", "backup-vcs", "backup-delta", "init", "init-secondary",
+SUBCOMMANDS = ["backup-all", "backup-files", "backup-vcs", "update-cloud", "init", "init-secondary",
                "update-secondary", "restic", "restic-secondary"]
 
 
@@ -27,7 +27,7 @@ def calls(monkeypatch):
             return calls.codes.get(name, 0)
         return run
 
-    for module, name in [(vcs, "backup_vcs"), (files, "restic_backup_files"), (delta, "restic_backup_delta"),
+    for module, name in [(vcs, "backup_vcs"), (files, "restic_backup_files"), (cloud, "restic_update_cloud"),
                          (repos, "restic_init"), (repos, "restic_init_secondary"),
                          (repos, "restic_update_secondary")]:
         monkeypatch.setattr(module, name, stub(name))
@@ -37,7 +37,7 @@ def calls(monkeypatch):
 @pytest.mark.parametrize("argv, expected", [
     (["backup-files"], ["restic_backup_files"]),
     (["backup-vcs"], ["backup_vcs"]),
-    (["backup-delta"], ["restic_backup_delta"]),
+    (["update-cloud"], ["restic_update_cloud"]),
     (["init"], ["restic_init"]),
     (["init-secondary"], ["restic_init_secondary"]),
     (["update-secondary"], ["restic_update_secondary"]),
@@ -50,35 +50,35 @@ def test_subcommand_dispatch(env, calls, argv, expected):
     assert calls == expected
 
 
-def test_backup_all_with_delta(env, calls):
-    env.write_settings(backup_all_includes_delta=True)
+def test_backup_all_with_update_cloud(env, calls):
+    env.write_settings(backup_all_includes_update_cloud=True)
     assert cli.main([]) == 0
-    assert calls == ["backup_vcs", "restic_backup_files", "restic_backup_delta"]
-    assert albums.calls == [["backup-raw", "--all", "--no-eject"]]
+    assert calls == ["backup_vcs", "restic_backup_files", "restic_update_cloud"]
+    assert albums.calls == [["backup-new", "--all", "--no-eject"]]
 
 
 def test_backup_all_backs_up_album_raws_also_when_restic_fails(env, calls, monkeypatch):
     calls.codes["restic_backup_files"] = 1
     assert cli.main([]) == 1
-    assert albums.calls == [["backup-raw", "--all", "--no-eject"]]
+    assert albums.calls == [["backup-new", "--all", "--no-eject"]]
     monkeypatch.setattr(albums, "albumflow", lambda *args: 2)
     calls.codes["restic_backup_files"] = 0
     assert cli.main([]) == 2
 
 
-@pytest.mark.parametrize("vcs_code, files_code, delta_code, delta_runs, result", [
+@pytest.mark.parametrize("vcs_code, files_code, cloud_code, cloud_runs, result", [
     (0, 0, 0, True, 0),
     (1, 0, 0, True, 1),     # a failed git repo doesn't stop the file backup, but fails the run
-    (0, 3, 0, True, 3),     # some files unreadable, but a snapshot was made: delta still runs
-    (0, 1, 0, False, 1),    # no snapshot: no delta
+    (0, 3, 0, True, 3),     # some files unreadable, but a snapshot was made: update-cloud still runs
+    (0, 1, 0, False, 1),    # no snapshot: no update-cloud
     (0, 0, 1, True, 1),
     (1, 3, 0, True, 1),
 ])
-def test_backup_all_exit_codes(env, calls, vcs_code, files_code, delta_code, delta_runs, result):
-    env.write_settings(backup_all_includes_delta=True)
-    calls.codes.update(backup_vcs=vcs_code, restic_backup_files=files_code, restic_backup_delta=delta_code)
+def test_backup_all_exit_codes(env, calls, vcs_code, files_code, cloud_code, cloud_runs, result):
+    env.write_settings(backup_all_includes_update_cloud=True)
+    calls.codes.update(backup_vcs=vcs_code, restic_backup_files=files_code, restic_update_cloud=cloud_code)
     assert cli.main(["backup-all"]) == result
-    assert ("restic_backup_delta" in calls) == delta_runs
+    assert ("restic_update_cloud" in calls) == cloud_runs
     assert calls[:2] == ["backup_vcs", "restic_backup_files"]
 
 
@@ -150,7 +150,7 @@ def test_bin_wrapper():
 def test_subcommand_help_names_settings_relative_to_appdata(env, monkeypatch, capsys):
     monkeypatch.setenv("APPDATA", str(env.settings.parent.parent))
     monkeypatch.setattr(config, "SETTINGS_PATH", env.settings.parent.parent / "backup" / "config.json")
-    for subcommand in ["backup-delta", "backup-all"]:
+    for subcommand in ["update-cloud", "backup-all"]:
         with pytest.raises(SystemExit):
             cli.main([subcommand, "-h"])
         assert R"%APPDATA%\backup\config.json" in " ".join(capsys.readouterr().out.split())
@@ -170,18 +170,18 @@ def test_main_help_survives_percent_signs(env, monkeypatch, capsys):
     assert R"%APPDATA%\backup\config.json" in " ".join(capsys.readouterr().out.split())
 
 
-def test_backup_delta_help_names_secondary_state_file(env, capsys):
+def test_update_cloud_help_names_secondary_state_file(env, capsys):
     with pytest.raises(SystemExit):
-        cli.main(["backup-delta", "-h"])
+        cli.main(["update-cloud", "-h"])
     out = "".join(capsys.readouterr().out.split())  # argparse may wrap at hyphens
     expected = f"tracked in {env.drive / 'Backup' / 'secondary-latest-snapshot.json'}, written by update-secondary"
     assert "".join(expected.split()) in out
 
 
-def test_backup_delta_help_without_primary_drive(env, capsys):
+def test_update_cloud_help_without_primary_drive(env, capsys):
     (env.drive / ".backup-destination").unlink()
     with pytest.raises(SystemExit):
-        cli.main(["backup-delta", "-h"])
+        cli.main(["update-cloud", "-h"])
     out = "".join(capsys.readouterr().out.split())  # argparse may wrap at hyphens
     expected = R"tracked in <drive with .backup-destination>:\Backup\secondary-latest-snapshot.json"
     assert "".join(expected.split()) in out

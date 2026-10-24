@@ -121,7 +121,7 @@ On the secondary drive (marker file in its root: `{config.SECONDARY_REPO_MARKER_
 - `pictures-new\<topic>\<album>`: raw files of albums, kept as long as there is space. An album may go
   once it is finished, i.e. moved to `Pictures\Originals`, which restic covers.
 
-In the cloud, a stopgap while the secondary is out of reach, written by `backup backup-delta`:
+In the cloud, a stopgap while the secondary is out of reach, written by `backup update-cloud`:
 
 - `{config.CLOUD_REPO}`: restic repository with the files of the primary's latest snapshot that the
   secondary lacks.
@@ -135,8 +135,8 @@ In the cloud, a stopgap while the secondary is out of reach, written by `backup 
 backup
 ```
 
-Same as `backup backup-all`: backup-vcs, backup-files, `albumflow backup-raw --all` (the raws of
-unfinished albums, to this drive's `pictures-new\to-secondary`), and backup-delta if enabled in
+Same as `backup backup-all`: backup-vcs, backup-files, `albumflow backup-new --all` (the raws of
+unfinished albums, to this drive's `pictures-new\to-secondary`), and update-cloud if enabled in
 `{config.SETTINGS_PATH}`.
 
 ## Update the secondary (in the office)

@@ -6,19 +6,19 @@ import argparse
 import sys
 
 import backup
-from backup import albums, config, delta, files, repos, vcs
+from backup import albums, cloud, config, files, repos, vcs
 
 
 def backup_all():
     vcs_exit_code = vcs.backup_vcs()
     files_exit_code = files.restic_backup_files()
-    # The raws of unfinished albums, which restic excludes; before the delta, whose cloud copies take them
+    # The raws of unfinished albums, which restic excludes; before update-cloud, whose cloud copies take them
     # from the primary
-    raw_exit_code = albums.albumflow("backup-raw", "--all", "--no-eject")
+    raw_exit_code = albums.albumflow("backup-new", "--all", "--no-eject")
     # restic's exit code 3: some files could not be read, but the snapshot was created
-    if config.settings()["backup_all_includes_delta"] and files_exit_code in (0, 3):
-        delta_exit_code = delta.restic_backup_delta()
-        return vcs_exit_code or raw_exit_code or delta_exit_code or files_exit_code
+    if config.settings()["backup_all_includes_update_cloud"] and files_exit_code in (0, 3):
+        cloud_exit_code = cloud.restic_update_cloud()
+        return vcs_exit_code or raw_exit_code or cloud_exit_code or files_exit_code
     return vcs_exit_code or raw_exit_code or files_exit_code
 
 
@@ -48,17 +48,17 @@ def build_parser():
 
     settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
-        "backup-vcs, then backup-files, then albumflow backup-raw --all, then backup-delta if "
-        f"backup_all_includes_delta in {settings_for_help}")
+        "backup-vcs, then backup-files, then albumflow backup-new --all, then update-cloud if "
+        f"backup_all_includes_update_cloud in {settings_for_help}")
     add("backup-files", files.restic_backup_files,
-        "back up files into the repo; doesn't include albumflow backup-raw (backup-all does)",
+        "back up files into the repo; doesn't include albumflow backup-new (backup-all does)",
         "The raws of unfinished albums (Pictures\\new, new-old), which restic excludes, are copied to the backup "
-        "drive by albumflow: when importing them, by albumflow backup-raw, or by backup-all running "
-        "albumflow backup-raw --all.")
+        "drive by albumflow: when importing them, by albumflow backup-new, or by backup-all running "
+        "albumflow backup-new --all.")
     add("backup-vcs", vcs.backup_vcs,
         "push branches, stashes and uncommitted changes of my version-controlled repos (currently git only) "
         "to backup branches")
-    add("backup-delta", delta.restic_backup_delta,
+    add("update-cloud", cloud.restic_update_cloud,
         "back up into the cloud repo the files of the primary repo's latest snapshot that the secondary repo "
         "lacks; includes albumflow update-cloud, which copies the album raws the secondary lacks to the cloud. "
         "Run it right after backup-files.",
@@ -66,7 +66,7 @@ def build_parser():
         f"update-secondary. albumflow copies the albums in the primary's Backup\\pictures-new\\to-secondary, and "
         f"the photos of albums not yet on the primary from the laptop, to {config.CLOUD_PICTURES}\\<topic>\\<album>; "
         "existing copies are never overwritten or deleted. "
-        f"backup-all runs it while backup_all_includes_delta is set in {settings_for_help}.")
+        f"backup-all runs it while backup_all_includes_update_cloud is set in {settings_for_help}.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,
         "create a new, empty secondary repo with the primary repo's chunker parameters")

@@ -1,4 +1,4 @@
-"""backup-delta: back up to the cloud what the secondary repo lacks."""
+"""update-cloud: back up to the cloud what the secondary repo lacks."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def free_space(path):
     return shutil.disk_usage(Path(path).anchor).free
 
 
-def restic_backup_delta():
+def restic_update_cloud():
     repos.require_repo(repos.repo_path(), "init")
     state_path = repos.secondary_state_path()
     if not state_path.exists():

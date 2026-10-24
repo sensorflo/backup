@@ -5,7 +5,7 @@ Back up my home folder and SD card with restic, and push my unpushed version-con
 Ensure Defender is turned off, or at least that restic.exe and the backup folder are excluded from scanning.
 
 `backup -h` lists the subcommands; no subcommand means `backup-all`. What gets backed up where is in
-[src/backup/config.py](src/backup/config.py). Optional settings (`backup_all_includes_delta`, `delta_albums`)
+[src/backup/config.py](src/backup/config.py). Optional settings (`backup_all_includes_update_cloud`)
 are in `%APPDATA%\backup\config.json`.
 
 ## Setup
@@ -57,7 +57,7 @@ While the secondary repo is out of date, recover from the cloud repo: restore th
 `secondary-latest-snapshot.json` (next to the primary repo) from the secondary repo, then the cloud repo's
 latest snapshot on top of it:
 
-    restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-private-delta" --insecure-no-password
+    restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-private-cloud" --insecure-no-password
 
-The raw files of the `delta_albums` are not in that repo but plain copies in
+The raw files of unfinished albums are not in that repo but albumflow's plain copies in
 `G:\My Drive\Backup\pictures-new\<topic>\<album>`: copy them back to the album folders.

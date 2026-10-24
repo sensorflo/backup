@@ -1,4 +1,4 @@
-"""Finding the restic repos, running restic on them, and the repo-level subcommands."""
+"""Finding the restic repos, running restic on them, and the repo-level commands."""
 
 from __future__ import annotations
 
@@ -154,7 +154,7 @@ Afterwards the cloud repository is no longer needed and can be deleted, and so c
 
 ## Restore
 
-The `restic` and `restic-secondary` subcommands run restic on the primary or secondary repository; add
+The `restic` and `restic-secondary` commands run restic on the primary or secondary repository; add
 any restic arguments. A snapshot holds the full source paths, with the drive letter as top folder, so
 restore a subtree with `latest:<path>` to avoid extra folder levels. Try `--dry-run` first.
 
@@ -198,7 +198,7 @@ backup restic prune
 backup -h
 ```
 
-`prune` after aborting a backup; `-h` lists all subcommands.
+`prune` after aborting a backup; `-h` lists all commands.
 """
 
 

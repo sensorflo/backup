@@ -22,13 +22,13 @@ def backup_all():
     return vcs_exit_code or raw_exit_code or files_exit_code
 
 
-RESTIC_PASSTHROUGH_SUBCOMMANDS = {"restic": repos.repo_path, "restic-secondary": repos.secondary_repo_path}
+RESTIC_PASSTHROUGH_COMMANDS = {"restic": repos.repo_path, "restic-secondary": repos.secondary_repo_path}
 
 
 def build_parser():
     settings = config.SETTINGS_PATH
     parser = argparse.ArgumentParser(prog="backup", description=backup.__doc__,
-                                     epilog="backup <subcommand> -h shows the help of a subcommand.\n\n"
+                                     epilog="backup <command> -h shows the help of a command.\n\n"
                                             "(Primary) Repository: "
                                             f"{repos.path_for_help(config.REPO_MARKER_NAME, config.REPO_DIR)}\n"
                                             "Secondary repository: "
@@ -37,11 +37,12 @@ def build_parser():
                                             f"Cloud album raws: {config.CLOUD_PICTURES}\n"
                                             f"Settings: {settings}",
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = parser.add_subparsers(dest="subcommand", metavar="<subcommand>",
+    parser._positionals.title = "commands"  # instead of "positional arguments"
+    sub = parser.add_subparsers(dest="command", metavar="<command>",
                                 help="one of the following, default: backup-all")
 
     def add(name, func, help, details=""):
-        """details: only in the subcommand's own help, not in the list of subcommands."""
+        """details: only in the command's own help, not in the list of commands."""
         # argparse %-formats help, but not description
         sub.add_parser(name, help=help.replace("%", "%%"),
                        description=f"{help} {details}".strip()).set_defaults(func=func)
@@ -81,7 +82,7 @@ def build_parser():
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if argv and argv[0] in RESTIC_PASSTHROUGH_SUBCOMMANDS:
-        return repos.restic_passthrough(argv[1:], RESTIC_PASSTHROUGH_SUBCOMMANDS[argv[0]]())
+    if argv and argv[0] in RESTIC_PASSTHROUGH_COMMANDS:
+        return repos.restic_passthrough(argv[1:], RESTIC_PASSTHROUGH_COMMANDS[argv[0]]())
     args = build_parser().parse_args(argv)
-    return args.func() if args.subcommand else backup_all()
+    return args.func() if args.command else backup_all()

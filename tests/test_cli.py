@@ -7,7 +7,7 @@ import pytest
 
 from backup import albums, cli, cloud, config, files, repos, vcs
 
-SUBCOMMANDS = ["backup-all", "backup-files", "backup-vcs", "update-cloud", "init", "init-secondary",
+COMMANDS = ["backup-all", "backup-files", "backup-vcs", "update-cloud", "init", "init-secondary",
                "update-secondary", "restic", "restic-secondary"]
 
 
@@ -17,7 +17,7 @@ class Calls(list):
 
 @pytest.fixture
 def calls(monkeypatch):
-    """Records which subcommand functions run, each returning the exit code set in calls.codes."""
+    """Records which command functions run, each returning the exit code set in calls.codes."""
     calls = Calls()
     calls.codes = {}
 
@@ -44,7 +44,7 @@ def calls(monkeypatch):
     (["backup-all"], ["backup_vcs", "restic_backup_files"]),
     ([], ["backup_vcs", "restic_backup_files"]),
 ])
-def test_subcommand_dispatch(env, calls, argv, expected):
+def test_command_dispatch(env, calls, argv, expected):
     # build_parser binds the functions when it runs, so the stubs are what gets called
     assert cli.main(argv) == 0
     assert calls == expected
@@ -88,13 +88,13 @@ def test_backup_all_files_run_even_if_vcs_fails(env, calls):
     assert calls == ["backup_vcs", "restic_backup_files"]
 
 
-def test_help_lists_subcommands_and_repos(env, capsys):
+def test_help_lists_commands_and_repos(env, capsys):
     with pytest.raises(SystemExit) as exit:
         cli.main(["-h"])
     assert exit.value.code == 0
     out = capsys.readouterr().out
-    for subcommand in SUBCOMMANDS:
-        assert subcommand in out
+    for command in COMMANDS:
+        assert command in out
     assert str(env.repo) in out
     assert str(env.secondary_repo) in out
     assert str(env.cloud) in out
@@ -107,7 +107,7 @@ def test_help_with_drives_missing(env, capsys):
     assert "<drive with .backup-destination>" in capsys.readouterr().out
 
 
-def test_unknown_subcommand(env, capsys):
+def test_unknown_command(env, capsys):
     with pytest.raises(SystemExit) as exit:
         cli.main(["backup-everything"])
     assert exit.value.code == 2
@@ -147,12 +147,12 @@ def test_bin_wrapper():
     assert "backup-all" in result.stdout
 
 
-def test_subcommand_help_names_settings_relative_to_appdata(env, monkeypatch, capsys):
+def test_command_help_names_settings_relative_to_appdata(env, monkeypatch, capsys):
     monkeypatch.setenv("APPDATA", str(env.settings.parent.parent))
     monkeypatch.setattr(config, "SETTINGS_PATH", env.settings.parent.parent / "backup" / "config.json")
-    for subcommand in ["update-cloud", "backup-all"]:
+    for command in ["update-cloud", "backup-all"]:
         with pytest.raises(SystemExit):
-            cli.main([subcommand, "-h"])
+            cli.main([command, "-h"])
         assert R"%APPDATA%\backup\config.json" in " ".join(capsys.readouterr().out.split())
 
 
@@ -187,7 +187,7 @@ def test_update_cloud_help_without_primary_drive(env, capsys):
     assert "".join(expected.split()) in out
 
 
-def test_subcommand_list_has_no_details(env, capsys):
+def test_command_list_has_no_details(env, capsys):
     with pytest.raises(SystemExit):
         cli.main(["-h"])
     assert "secondary-latest-snapshot.json" not in capsys.readouterr().out

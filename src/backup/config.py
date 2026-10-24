@@ -217,7 +217,10 @@ def settings_path_for_help():
 def settings():
     if not SETTINGS_PATH.exists():
         return DEFAULT_SETTINGS
-    data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        sys.exit(f"{SETTINGS_PATH} is not valid JSON: {error}")
     # An unknown key is an error, not ignored: e.g. a renamed setting would silently fall back to its default
     if unknown := sorted(set(data) - set(DEFAULT_SETTINGS)):
         sys.exit(f"Unknown settings in {SETTINGS_PATH}: {', '.join(unknown)}. Known: {', '.join(DEFAULT_SETTINGS)}")

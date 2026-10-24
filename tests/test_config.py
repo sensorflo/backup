@@ -76,3 +76,10 @@ def test_unknown_setting_is_an_error(env):
     env.write_settings(backup_all_includes_delta=True)  # the old name
     with pytest.raises(SystemExit, match="Unknown settings in .*: backup_all_includes_delta"):
         config.settings()
+
+
+def test_invalid_settings_file_is_a_clear_error(env):
+    env.settings.parent.mkdir(parents=True, exist_ok=True)
+    env.settings.write_text('{\n  "backup_all_includes_update_cloud": true,\n}\n', encoding="utf-8")
+    with pytest.raises(SystemExit, match="is not valid JSON: Illegal trailing comma"):
+        config.settings()

@@ -11,13 +11,14 @@ from backup import albums, cloud, config, files, repos, vcs
 
 
 def backup_all():
+    settings = config.settings()  # first, so a broken settings file stops before the long work
     vcs_exit_code = vcs.backup_vcs()
     files_exit_code = files.restic_backup_files()
     # The raws of unfinished albums, which restic excludes; before update-cloud, whose cloud copies take them
     # from the primary
     raw_exit_code = albums.albumflow("backup-new", "--all", "--no-eject")
     # restic's exit code 3: some files could not be read, but the snapshot was created
-    if config.settings()["backup_all_includes_update_cloud"] and files_exit_code in (0, 3):
+    if settings["backup_all_includes_update_cloud"] and files_exit_code in (0, 3):
         cloud_exit_code = cloud.restic_update_cloud()
         return vcs_exit_code or raw_exit_code or cloud_exit_code or files_exit_code
     return vcs_exit_code or raw_exit_code or files_exit_code

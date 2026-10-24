@@ -191,3 +191,11 @@ def test_command_list_has_no_details(env, capsys):
     with pytest.raises(SystemExit):
         cli.main(["-h"])
     assert "secondary-latest-snapshot.json" not in capsys.readouterr().out
+
+
+def test_backup_all_reads_the_settings_first(env, calls):
+    env.settings.parent.mkdir(parents=True, exist_ok=True)
+    env.settings.write_text("{,}", encoding="utf-8")
+    with pytest.raises(SystemExit, match="not valid JSON"):
+        cli.main([])
+    assert calls == [], "nothing ran"

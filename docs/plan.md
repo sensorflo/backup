@@ -36,7 +36,7 @@ tool", "Purging albums from the backup drives").
 - Shared contract: only the drive markers and the rule "`Backup\` on a drive belongs to the tools,
   everything else is mine". Each tool defines the markers itself; a comment says the other tool uses the
   same ones (without repeating the names).
-- The separation is done (2026-10-23); purging is `albumflow purge-backup`.
+- The separation is done (2026-10-23); purging is `albumflow purge`.
 
 ## Raw files of the new tree
 

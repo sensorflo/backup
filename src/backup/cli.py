@@ -101,11 +101,10 @@ def build_parser():
         "create a new, empty secondary repo with the primary repo's chunker parameters")
     add("update-secondary", repos.restic_update_secondary,
         "copy snapshots missing in the secondary repo from the primary repo, then run albumflow "
-        "update-secondary, which copies the album raws the secondary lacks and removes both drives",
-        "albumflow also deletes its album copies in the cloud that are on the secondary now. Afterwards the "
-        "cloud is no longer needed as a stand-in for the secondary: unless you want it anyway (e.g. the "
-        f"laptop at high risk), set backup_all_includes_update_cloud to false in {settings_for_help}, so "
-        f"backup-all no longer runs update-cloud; the cloud repo {config.CLOUD_REPO} can then be deleted.")
+        "update-secondary for the album raws (see its help; it ends by removing both drives)",
+        "Afterwards the cloud is no longer needed as a stand-in for the secondary: unless you want it anyway "
+        f"(e.g. the laptop at high risk), set backup_all_includes_update_cloud to false in {settings_for_help}, "
+        f"so backup-all no longer runs update-cloud, and delete the cloud repo {config.CLOUD_REPO}.")
     # Only for the help: main() passes their arguments to restic before argparse could reject restic's options
     sub.add_parser("restic", help="run restic with the remaining arguments on the repo")
     sub.add_parser("restic-secondary", help="run restic with the remaining arguments on the secondary repo")

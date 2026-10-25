@@ -55,7 +55,9 @@ def build_parser():
     settings = config.SETTINGS_PATH
     parser = argparse.ArgumentParser(prog="backup", description=backup.__doc__,
                                      usage="backup [-h] [<command>] ...",
-                                     epilog="backup <command> -h shows the help of a command.\n\n"
+                                     epilog="backup <command> -h shows the help of a command.\n"
+                                            "An overview of backup and albumflow, with what goes where: the Google "
+                                            "Drawing \"backup & albumflow\".\n\n"
                                             "(Primary) Repository: "
                                             f"{repos.path_for_help(config.REPO_MARKER_NAME, config.REPO_DIR)}\n"
                                             "Secondary repository: "

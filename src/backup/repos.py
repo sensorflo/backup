@@ -284,7 +284,11 @@ def restic_update_secondary():
     state = {"snapshot": latest["id"], "time": latest["time"], "copied": datetime.datetime.now().astimezone().isoformat()}
     secondary_state_path().write_text(json.dumps(state, indent=2), encoding="utf-8")
     # The raws of the albums waiting on the primary, which restic excludes; albumflow then removes both drives
-    return albums.albumflow("update-secondary")
+    exit_code = albums.albumflow("update-secondary")
+    if config.settings()["backup_all_includes_update_cloud"]:
+        print(f"The secondary is up to date: unless you want the cloud anyway, set backup_all_includes_update_cloud "
+              f"to false in {config.settings_path_for_help()}, so backup-all no longer runs update-cloud.")
+    return exit_code
 
 
 def restic_passthrough(restic_args, repo):

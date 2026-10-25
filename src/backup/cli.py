@@ -27,17 +27,28 @@ def backup_all():
 RESTIC_PASSTHROUGH_COMMANDS = {"restic": repos.repo_path, "restic-secondary": repos.secondary_repo_path}
 
 
-class HelpFormatter(argparse.RawDescriptionHelpFormatter):
-    """Lists the commands directly, without a line for <command> above them (as git and pip do)."""
+class CommandHelpFormatter(argparse.HelpFormatter):
+    """For a command's help: wraps at spaces only, so names like backup-files aren't split at their hyphen."""
+
+    def _split_lines(self, text, width):
+        return textwrap.wrap(" ".join(text.split()), width, break_on_hyphens=False)
+
+    def _fill_text(self, text, width, indent):
+        return textwrap.fill(" ".join(text.split()), width, initial_indent=indent, subsequent_indent=indent,
+                             break_on_hyphens=False)
+
+
+class HelpFormatter(CommandHelpFormatter):
+    """For the main help: the description and epilog as written, and the commands listed directly, without a
+    line for <command> above them (as git and pip do)."""
+
+    def _fill_text(self, text, width, indent):
+        return argparse.RawDescriptionHelpFormatter._fill_text(self, text, width, indent)
 
     def _format_action(self, action):
         if isinstance(action, argparse._SubParsersAction):
             return "".join(self._format_action(a) for a in action._get_subactions())
         return super()._format_action(action)
-
-    def _split_lines(self, text, width):
-        # Wrap at spaces only, so names like backup-files aren't split at their hyphen
-        return textwrap.wrap(" ".join(text.split()), width, break_on_hyphens=False)
 
 
 def build_parser():
@@ -59,8 +70,9 @@ def build_parser():
     def add(name, func, help, details=""):
         """details: only in the command's own help, not in the list of commands."""
         # argparse %-formats help, but not description
-        sub.add_parser(name, help=help.replace("%", "%%"),
-                       description=f"{help} {details}".strip()).set_defaults(func=func)
+        sub.add_parser(name, help=help.replace("%", "%%"), formatter_class=CommandHelpFormatter,
+                       description=f"{help}{'' if help.endswith('.') else '.'} {details}".strip()
+                       if details else help).set_defaults(func=func)
 
     settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
@@ -89,7 +101,11 @@ def build_parser():
         "create a new, empty secondary repo with the primary repo's chunker parameters")
     add("update-secondary", repos.restic_update_secondary,
         "copy snapshots missing in the secondary repo from the primary repo, then run albumflow "
-        "update-secondary, which copies the album raws the secondary lacks and removes both drives")
+        "update-secondary, which copies the album raws the secondary lacks and removes both drives",
+        "albumflow also deletes its album copies in the cloud that are on the secondary now. Afterwards the "
+        "cloud is no longer needed as a stand-in for the secondary: unless you want it anyway (e.g. the "
+        f"laptop at high risk), set backup_all_includes_update_cloud to false in {settings_for_help}, so "
+        f"backup-all no longer runs update-cloud; the cloud repo {config.CLOUD_REPO} can then be deleted.")
     # Only for the help: main() passes their arguments to restic before argparse could reject restic's options
     sub.add_parser("restic", help="run restic with the remaining arguments on the repo")
     sub.add_parser("restic-secondary", help="run restic with the remaining arguments on the secondary repo")

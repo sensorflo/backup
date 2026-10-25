@@ -300,3 +300,15 @@ def test_readme_is_well_formed_markdown(env):
     assert lines[0] == "# Backup"
     assert sum(line == "```" for line in lines) % 2 == 0, "balanced code fences"
     assert "\t" not in text
+
+
+def test_update_secondary_reminds_of_the_cloud_setting(env, capfd):
+    env.init_primary()
+    env.init_secondary()
+    env.write(env.home / "a.txt", "1")
+    backup_home(env)
+    assert cli.main(["update-secondary"]) == 0
+    assert "backup_all_includes_update_cloud" not in capfd.readouterr().out
+    env.write_settings(backup_all_includes_update_cloud=True)
+    assert cli.main(["update-secondary"]) == 0
+    assert "set backup_all_includes_update_cloud to false" in capfd.readouterr().out

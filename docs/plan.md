@@ -2,6 +2,19 @@
 
 Status: discussion notes (2026-10-22, updated 2026-10-23).
 
+## Terms: backups and drives
+
+Decided 2026-10-25. Roles are backups, devices are drives (and the cloud); each device is named after the
+role it serves:
+
+- **primary backup**: the copy at home, on the **primary drive** (marker `.backup-destination`).
+- **secondary backup**: a copy away from the laptop and the primary drive, i.e. on the **secondary drive**
+  (in the office, marker `.secondary-backup-destination`) or in the **cloud** (Google Drive, the stand-in
+  while the secondary drive is out of reach, or when the laptop is at high risk).
+
+A photo is safe once it is in *a* secondary backup; texts say "on *the* secondary drive" when they mean
+only that drive. Never "backup drive" alone.
+
 ## Responsibilities: backup and albumflow
 
 Decided 2026-10-23, in detail in albumflow's `docs/plan.md` ("Responsibilities: albumflow and the backup

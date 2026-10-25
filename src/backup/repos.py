@@ -149,8 +149,8 @@ unfinished albums, to this drive's `pictures-new\to-secondary`), and update-clou
    still copied; do the albums by hand.
 3. Check the new snapshots are there: `backup restic-secondary snapshots`
 
-Afterwards the cloud repository is no longer needed and can be deleted, and so can the albums in
-`{config.CLOUD_PICTURES}` that are now on the secondary.
+Afterwards the cloud repository is no longer needed and can be deleted; albumflow has already deleted
+its copies in `{config.CLOUD_PICTURES}` of what is now on the secondary drive.
 
 ## Restore
 

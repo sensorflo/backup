@@ -177,7 +177,7 @@ def test_update_secondary_runs_albumflow_for_the_album_raws(env, monkeypatch):
     env.write(env.home / "a.txt", "1")
     backup_home(env)
     assert cli.main(["update-secondary"]) == 0
-    assert albums.calls == [["update-secondary"]]
+    assert albums.calls == [["update-secondary", "--no-eject"]]
     monkeypatch.setattr(albums, "albumflow", lambda *args: 2)
     assert cli.main(["update-secondary"]) == 2
     assert repos.secondary_state_path().exists(), "the snapshots were copied all the same"

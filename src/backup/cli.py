@@ -105,7 +105,7 @@ def build_parser():
         "create a new, empty secondary repo with the primary repo's chunker parameters")
     add("update-secondary", repos.restic_update_secondary,
         "copy snapshots missing in the secondary repo from the primary repo, then run albumflow "
-        "update-secondary for the album raws (see its help; it ends by removing both drives)",
+        "update-secondary for the album raws (see its help); both drives stay connected",
         "Afterwards the cloud is no longer needed as a stand-in for the secondary: unless you want it anyway "
         f"(e.g. the laptop at high risk), set backup_all_includes_update_cloud to false in {settings_for_help}, "
         f"so backup-all no longer runs update-cloud, and delete the cloud repo {config.CLOUD_REPO}.")

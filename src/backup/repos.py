@@ -147,10 +147,11 @@ On the office laptop, which needs only Python (3.12 or newer) and restic:
 2. `python {pyz} update-secondary` copies the snapshots, then runs `albumflow.pyz update-secondary`
    (next to `{config.SELF_COPY_NAME}`; albumflow writes it there), which copies each album in the primary's
    `pictures-new\to-secondary` to the secondary's `pictures-new`, moves it on the primary to
-   `pictures-new\copied-to-secondary`, records in the primary's index what the secondary drive holds,
-   and removes both drives. Without albumflow, the snapshots are still copied; do the albums by hand.
+   `pictures-new\copied-to-secondary`, and records in the primary's index what the secondary drive
+   holds. Without albumflow, the snapshots are still copied; do the albums by hand.
 3. Check the new snapshots are there: `python {pyz} restic-secondary snapshots`
 4. To make room: `python {pyz.parent / "albumflow.pyz"} purge` (it asks before deleting anything).
+5. Remove both drives ("Safely Remove Hardware").
 
 Back home, the next `backup` deletes from the cloud (`{config.CLOUD_PICTURES}`) what is now on the
 secondary drive. The cloud repository is no longer needed then and can be deleted.
@@ -287,7 +288,7 @@ def restic_update_secondary():
     state = {"snapshot": latest["id"], "time": latest["time"], "copied": datetime.datetime.now().astimezone().isoformat()}
     secondary_state_path().write_text(json.dumps(state, indent=2), encoding="utf-8")
     # The raws of the albums waiting on the primary, which restic excludes; albumflow then removes both drives
-    exit_code = albums.albumflow("update-secondary")
+    exit_code = albums.albumflow("update-secondary", "--no-eject")  # checking and purging may follow
     if config.settings()["backup_all_includes_update_cloud"]:
         print(f"The secondary is up to date: unless you want the cloud anyway, set backup_all_includes_update_cloud "
               f"to false in {config.settings_path_for_help()}, so backup-all no longer runs update-cloud.")

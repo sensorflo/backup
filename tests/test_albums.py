@@ -11,3 +11,11 @@ def test_missing_albumflow_is_an_error(capfd):
 def test_albumflow_path_in_the_project():
     assert albums.albumflow_path().parts[-5:] == ("src", "albumflow", ".venv", "Scripts", "albumflow.exe")
     assert str(albums.albumflow_path()).startswith(config.HOME)
+
+
+def test_albumflow_pyz_on_the_primary_drive_when_not_installed(env, monkeypatch):
+    env.init_primary()
+    assert albums.albumflow_command() is None
+    pyz = albums.albumflow_pyz()
+    pyz.write_text("")
+    assert albums.albumflow_command()[1:] == [str(pyz)]

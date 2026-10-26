@@ -17,6 +17,8 @@ def backup_all():
     # The raws of unfinished albums, which restic excludes; before update-cloud, whose cloud copies take them
     # from the primary
     raw_exit_code = albums.albumflow("backup-new", "--all", "--no-eject")
+    # At home: deletes from the cloud what reached the secondary drive (in the office) since
+    raw_exit_code = albums.albumflow("update-secondary", "--no-eject") or raw_exit_code
     # restic's exit code 3: some files could not be read, but the snapshot was created
     if settings["backup_all_includes_update_cloud"] and files_exit_code in (0, 3):
         cloud_exit_code = cloud.restic_update_cloud()
@@ -78,8 +80,8 @@ def build_parser():
 
     settings_for_help = config.settings_path_for_help()
     add("backup-all", backup_all,
-        "the default, without a command: backup-vcs, then backup-files, then albumflow backup-new --all, then "
-        "update-cloud if "
+        "the default, without a command: backup-vcs, then backup-files, then albumflow backup-new --all and "
+        "albumflow update-secondary (which tidies up the cloud), then update-cloud if "
         f"backup_all_includes_update_cloud in {settings_for_help}")
     add("backup-files", files.restic_backup_files,
         "back up files into the repo; doesn't include albumflow backup-new (backup-all does)",

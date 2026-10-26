@@ -141,16 +141,19 @@ unfinished albums, to this drive's `pictures-new\to-secondary`), and update-clou
 
 ## Update the secondary (in the office)
 
-1. Connect both drives: the primary and the secondary one.
-2. `backup update-secondary` (or, without the project: `python {pyz} update-secondary`) copies the
-   snapshots, then runs `albumflow update-secondary`, which copies each album in the primary's
-   `pictures-new\to-secondary` to the secondary's `pictures-new`, moves it on the primary to
-   `pictures-new\copied-to-secondary`, and removes both drives. Without albumflow, the snapshots are
-   still copied; do the albums by hand.
-3. Check the new snapshots are there: `backup restic-secondary snapshots`
+On the office laptop, which needs only Python (3.12 or newer) and restic:
 
-Afterwards the cloud repository is no longer needed and can be deleted; albumflow has already deleted
-its copies in `{config.CLOUD_PICTURES}` of what is now on the secondary drive.
+1. Connect both drives: the primary and the secondary one.
+2. `python {pyz} update-secondary` copies the snapshots, then runs `albumflow.pyz update-secondary`
+   (next to `{config.SELF_COPY_NAME}`; albumflow writes it there), which copies each album in the primary's
+   `pictures-new\to-secondary` to the secondary's `pictures-new`, moves it on the primary to
+   `pictures-new\copied-to-secondary`, records in the primary's index what the secondary drive holds,
+   and removes both drives. Without albumflow, the snapshots are still copied; do the albums by hand.
+3. Check the new snapshots are there: `python {pyz} restic-secondary snapshots`
+4. To make room: `python {pyz.parent / "albumflow.pyz"} purge` (it asks before deleting anything).
+
+Back home, the next `backup` deletes from the cloud (`{config.CLOUD_PICTURES}`) what is now on the
+secondary drive. The cloud repository is no longer needed then and can be deleted.
 
 ## Restore
 

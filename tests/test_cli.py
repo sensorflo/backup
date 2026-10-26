@@ -54,13 +54,13 @@ def test_backup_all_with_update_cloud(env, calls):
     env.write_settings(backup_all_includes_update_cloud=True)
     assert cli.main([]) == 0
     assert calls == ["backup_vcs", "restic_backup_files", "restic_update_cloud"]
-    assert albums.calls == [["backup-new", "--all", "--no-eject"]]
+    assert albums.calls == [["backup-new", "--all", "--no-eject"], ["update-secondary", "--no-eject"]]
 
 
 def test_backup_all_backs_up_album_raws_also_when_restic_fails(env, calls, monkeypatch):
     calls.codes["restic_backup_files"] = 1
     assert cli.main([]) == 1
-    assert albums.calls == [["backup-new", "--all", "--no-eject"]]
+    assert albums.calls == [["backup-new", "--all", "--no-eject"], ["update-secondary", "--no-eject"]]
     monkeypatch.setattr(albums, "albumflow", lambda *args: 2)
     calls.codes["restic_backup_files"] = 0
     assert cli.main([]) == 2

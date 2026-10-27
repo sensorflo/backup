@@ -39,6 +39,8 @@
 # - Local\Mozilla\Firefox: cache
 #
 # EMDB        + Roaming\EMDB: emdb.dat and downloaded posters, covers, actor images (~650MB)
+# qBittorrent + Local\qBittorrent\BT_backup: the torrents and their resume data, so seeding goes on after a
+#               restore; - its cache and logs
 # Notepad++   + Roaming\Notepad++: config, session, unsaved tabs (backup\), plugins
 # SmartGit    + Roaming\syntevo, - its updates, logs and lock files
 # Everything, Greenshot, calibre (settings only, the library is elsewhere)
@@ -112,6 +114,7 @@ APPDATA_INCLUDES = [
     R"Local\darktable", # also config, styles and lua scripts
     R"Local\ansel",
     R"Roaming\EMDB", # including downloaded posters etc., < 1GB
+    R"Local\qBittorrent\BT_backup", # the torrents, with their resume data (a few MB)
     # Settings
     R"Roaming\Adobe\Lightroom", # presets, templates, plugins, preferences
     R"Roaming\Adobe\CameraRaw", # presets, profiles

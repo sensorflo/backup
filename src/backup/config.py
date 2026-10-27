@@ -182,10 +182,9 @@ def excludes():
 
         # Complete folders
         _join(home, R"Large\Pictures\Temp\**"),
-        # Movies (albumflow's movie-* commands): Large\Videos-store holds them; Large\Videos is the view, junctions
-        # named canonically (restic stores a junction as a link, never follows it), plus small files like the README.
-        # Below its first level everything is left out: until the movies are in the store, they are folders there.
-        _join(home, R"Large\Videos-store\**"),
+        # Movies (albumflow's movie-* commands): in Large\Videos, Store and Downloading (qBittorrent) hold them, and
+        # Videos is the view, junctions named canonically, recreated by albumflow. Everything below the first level
+        # is left out; small files there like the README are kept.
         _join(home, R"Large\Videos\*\*"),
         _join(home, R"Large\Pictures\Lightroom\Lightroom Catalog Previews.lrdata\**"),
         _join(home, R"Large\Pictures\Lightroom\Lightroom Catalog Smart Previews.lrdata\**"),

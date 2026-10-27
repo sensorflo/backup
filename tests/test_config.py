@@ -17,6 +17,8 @@ ORIGINAL_EXCLUDES = [
     R"C:\Users\Senso\NTUSER.DAT*",
     R"**\.dtrash\**",
     R"C:\Users\Senso\Large\Pictures\Temp\**",
+    R"C:\Users\Senso\Large\Videos-store\**",  # added since: movies
+    R"C:\Users\Senso\Large\Videos\*\*",
     R"C:\Users\Senso\Large\Pictures\Lightroom\Lightroom Catalog Previews.lrdata\**",
     R"C:\Users\Senso\Large\Pictures\Lightroom\Lightroom Catalog Smart Previews.lrdata\**",
     R"C:\Users\Senso\CrossDevice\**",

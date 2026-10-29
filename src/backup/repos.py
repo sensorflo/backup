@@ -128,6 +128,8 @@ In the cloud, a stopgap while the secondary is out of reach, written by `backup 
 - `{config.CLOUD_PICTURES}\<topic>\<album>`: plain copies, made by albumflow, of the raw files the
   secondary lacks: the albums in the primary's `pictures-new\to-secondary`, and photos imported while the
   primary was out of reach, from the laptop.
+- `{config.CLOUD_REJECTED}\<topic>\<album>`: the same for the photos rejected while culling; albumflow
+  deletes from here first when the cloud runs short of space.
 
 ## Back up (at home)
 
@@ -153,8 +155,8 @@ On the office laptop, which needs only Python (3.12 or newer) and restic:
 4. To make room: `python {pyz.parent / "albumflow.pyz"} purge` (it asks before deleting anything).
 5. Remove both drives ("Safely Remove Hardware").
 
-Back home, the next `backup` deletes from the cloud (`{config.CLOUD_PICTURES}`) what is now on the
-secondary drive. The cloud repository is no longer needed then and can be deleted.
+Back home, the next `backup` deletes from the cloud (`{config.CLOUD_PICTURES}`, `{config.CLOUD_REJECTED}`)
+what is now on the secondary drive. The cloud repository is no longer needed then and can be deleted.
 
 ## Restore
 
@@ -191,8 +193,8 @@ snapshot on top:
 restic restore latest:{home} --target {config.HOME} --repo "{config.CLOUD_REPO}" --insecure-no-password
 ```
 
-The raw files of the albums in `{config.CLOUD_PICTURES}` are plain files: copy them back to the album
-folders.
+The raw files of the albums in `{config.CLOUD_PICTURES}` (and the rejected ones in
+`{config.CLOUD_REJECTED}`) are plain files: copy them back to the album folders.
 
 ## Maintenance
 

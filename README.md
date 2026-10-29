@@ -60,4 +60,5 @@ latest snapshot on top of it:
     restic restore latest:/C/Users/Senso --target C:\Users\Senso --repo "G:\My Drive\Backup\restic-private-cloud" --insecure-no-password
 
 The raw files of unfinished albums are not in that repo but albumflow's plain copies in
-`G:\My Drive\Backup\pictures-new\<topic>\<album>`: copy them back to the album folders.
+`G:\My Drive\Backup\pictures-new\<topic>\<album>` (the rejected photos in
+`G:\My Drive\Backup\pictures-rejected`): copy them back to the album folders.

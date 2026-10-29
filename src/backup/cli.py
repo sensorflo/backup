@@ -65,7 +65,8 @@ def build_parser():
                                             "Secondary repository: "
                                             f"{repos.path_for_help(config.SECONDARY_REPO_MARKER_NAME, config.SECONDARY_REPO_DIR)}\n"
                                             f"Cloud repository: {config.CLOUD_REPO}\n"
-                                            f"Cloud album raws: {config.CLOUD_PICTURES}\n"
+                                            f"Cloud album raws: {config.CLOUD_PICTURES}, rejected ones: "
+                                            f"{config.CLOUD_REJECTED}\n"
                                             f"Settings: {settings}",
                                      formatter_class=HelpFormatter)
     parser._positionals.title = "commands"  # instead of "positional arguments"
@@ -98,7 +99,7 @@ def build_parser():
         f"What the secondary repo has is tracked in {repos.secondary_state_path_for_help()}, written by "
         f"update-secondary. albumflow copies the albums in the primary's Backup\\pictures-new\\to-secondary, and "
         f"the photos of albums not yet on the primary from the laptop, to {config.CLOUD_PICTURES}\\<topic>\\<album>; "
-        "existing copies are never overwritten or deleted. "
+        f"rejected photos to {config.CLOUD_REJECTED}\\<topic>\\<album>, deleted first when space is short. "
         f"backup-all runs it while backup_all_includes_update_cloud is set in {settings_for_help}.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,

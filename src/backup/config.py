@@ -89,9 +89,10 @@ SECONDARY_REPO_DIR = rf"{BACKUP_DIR}\restic-private-secondary"
 # Recovery: restore that snapshot from the secondary, then the cloud repo's latest snapshot on top.
 CLOUD_REPO = R"G:\My Drive\Backup\restic-private-cloud"
 # Next to it, albumflow's plain copies of the album raws the secondary lacks, which restic excludes:
-# <CLOUD_PICTURES>\<topic>\<album>. albumflow defines the folder too; here it is only named in the help
-# and the README.
+# <CLOUD_PICTURES>\<topic>\<album>, the rejected photos in <CLOUD_REJECTED>\<topic>\<album>. albumflow defines
+# the folders too; here they are only named in the help and the README.
 CLOUD_PICTURES = R"G:\My Drive\Backup\pictures-new"
+CLOUD_REJECTED = R"G:\My Drive\Backup\pictures-rejected"
 # Written by update-secondary next to the primary repo, read by update-cloud: the newest snapshot the
 # secondary repo has. JSON: {"snapshot": <ID>, "time": <snapshot time>, "copied": <time of the copy>}
 SECONDARY_STATE_NAME = "secondary-latest-snapshot.json"

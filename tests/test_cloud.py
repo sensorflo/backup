@@ -67,7 +67,7 @@ def test_update_cloud_runs_albumflow_for_the_album_raws(synced):
     cli.main(["backup-files"])
     albums.calls.clear()
     assert cli.main(["update-cloud"]) == 0
-    assert albums.calls == [["update-cloud"]]
+    assert albums.calls == [["update-cloud", "--room-for=3"]]  # new.txt: "new"
     assert cloud_files(synced) == {"home/Documents/new.txt"}, "the restic cloud repo gets no raws"
 
 
@@ -79,7 +79,7 @@ def test_update_cloud_runs_albumflow_also_without_changes_and_after_a_failure(sy
     cli.main(["backup-files"])
     monkeypatch.setattr(cloud, "backup_to_cloud_repo", lambda files, base: 1)
     assert cli.main(["update-cloud"]) == 1
-    assert albums.calls == [["update-cloud"], ["update-cloud"]]
+    assert albums.calls == [["update-cloud", "--room-for=0"], ["update-cloud", "--room-for=3"]]
 
 
 def test_update_cloud_fails_when_albumflow_fails(synced, monkeypatch):
@@ -178,14 +178,23 @@ def test_update_cloud_refuses_when_not_enough_space(synced, monkeypatch, capfd):
 
 
 
-def test_update_cloud_space_check_counts_existing_cloud_repo(synced, monkeypatch):
+def test_update_cloud_lets_albumflow_make_room_first(synced, monkeypatch):
+    """albumflow runs first, keeping room for the repo part (deleting rejected photos if needed)."""
     synced.write(synced.home / "Documents" / "big.bin", b"b" * 10_000)
     cli.main(["backup-files"])
-    cli.main(["update-cloud"])
-    cloud_size = cloud.folder_size(synced.cloud)
-    # The same files again: what is already in the cloud repo is deduplicated, so little space is enough
-    monkeypatch.setattr(cloud, "free_space", lambda path: max(0, 10_000 - cloud_size) + 1)
+    free = [9_999]
+
+    def albumflow(*args):
+        albums.calls.append(list(args))
+        free[0] = 20_000  # rejected photos deleted
+        return 0
+
+    monkeypatch.setattr(albums, "albumflow", albumflow)
+    monkeypatch.setattr(cloud, "free_space", lambda path: free[0])
+    albums.calls.clear()
     assert cli.main(["update-cloud"]) == 0
+    assert albums.calls == [["update-cloud", "--room-for=10000"]]
+    assert cloud_files(synced) == {"home/Documents/big.bin"}
 
 
 def test_free_space_of_cloud_drive(env):

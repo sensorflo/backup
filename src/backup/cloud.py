@@ -31,10 +31,6 @@ def new_files(base, target):
             yield f"{path[1]}:{path[2:]}".replace("/", "\\") # /C/Users/... -> C:\Users\...
 
 
-def folder_size(folder):
-    return sum(path.stat().st_size for path in Path(folder).rglob("*") if path.is_file())
-
-
 def plural(count, noun):
     return f"{count} {noun}{'' if count == 1 else 's'}"
 
@@ -55,22 +51,22 @@ def restic_update_cloud():
           f"that are new compared to the secondary's {base['short_id']} ({base['time'][:16]}) ...")
     files = {path for path in new_files(base["id"], latest["id"]) if os.path.isfile(path)}
     cloud_repo = config.CLOUD_REPO
+    # An upper bound: restic deduplicates and compresses. Too high only makes albumflow delete more rejected photos.
     size = sum(os.path.getsize(path) for path in files)
-    # Upper bound: what earlier runs already uploaded is deduplicated
-    restic_needed = max(0, size - (folder_size(cloud_repo) if Path(cloud_repo).exists() else 0))
-    print(f"For {cloud_repo}: {plural(len(files), 'file')}, {size / 2**30:.1f} GiB, of which at most "
-          f"{restic_needed / 2**30:.1f} GiB new.")
+    print(f"For {cloud_repo}: {plural(len(files), 'file')}, at most {size / 2**30:.1f} GiB.")
+    # First the raws of the albums the secondary lacks, which restic excludes: albumflow keeps room for the repo
+    # part, deleting rejected photos from the cloud if needed
+    albumflow_exit_code = albums.albumflow("update-cloud", f"--room-for={size}")
     free = free_space(cloud_repo)
     print(f"{free / 2**30:.1f} GiB free on {Path(cloud_repo).anchor}")
-    if restic_needed > free:
+    if size > free:
         sys.exit(f"Not enough space on {Path(cloud_repo).anchor}")
     if files:
         exit_code = backup_to_cloud_repo(files, base)
     else:
         print("Nothing new for the cloud repo.")
         exit_code = 0
-    # The raws of the albums the secondary lacks, which restic excludes; also if the repo part failed
-    return albums.albumflow("update-cloud") or exit_code
+    return albumflow_exit_code or exit_code
 
 
 def backup_to_cloud_repo(files, base):

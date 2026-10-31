@@ -100,7 +100,8 @@ def build_parser():
         f"update-secondary. albumflow copies the albums in the primary's Backup\\pictures-new\\to-secondary, and "
         f"the photos of albums not yet on the primary from the laptop, to {config.CLOUD_PICTURES}\\<topic>\\<album>; "
         f"rejected photos to {config.CLOUD_REJECTED}\\<topic>\\<album>, deleted first when space is short. "
-        f"backup-all runs it while backup_all_includes_update_cloud is set in {settings_for_help}.")
+        "albumflow runs first, keeping room for the repo part (at most the files' total size), so rejected photos "
+        f"make room for it too. backup-all runs it while backup_all_includes_update_cloud is set in {settings_for_help}.")
     add("init", repos.restic_init, "create a new, empty repo")
     add("init-secondary", repos.restic_init_secondary,
         "create a new, empty secondary repo with the primary repo's chunker parameters")

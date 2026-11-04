@@ -171,7 +171,7 @@ def excludes():
         _join(home, R"Large\Pictures\Rejected\**\*.arw"),
         _join(sd, R"Large\Pictures\Pictures\new\**\*.arw"),
         _join(sd, R"Large\Pictures\Pictures\new-old\**\*.arw"),
-        _join(sd, R"Large\Pictures\Rejected\**\*.arw"),
+        _join(sd, R"Large\Pictures\Rejected\**\*.arw"), # ???? Move Rejected into New?
 
         # Note that non-raw image files are backed up, even the ones in the 'new'
         # 'new-old' trees. I don't have too many of those.

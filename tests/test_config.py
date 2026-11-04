@@ -16,8 +16,10 @@ ORIGINAL_EXCLUDES = [
     R"C:\Users\Senso\src\**\build*\**",
     R"C:\Users\Senso\NTUSER.DAT*",
     R"**\.dtrash\**",
-    R"C:\Users\Senso\Large\Pictures\Temp\**",
     R"C:\Users\Senso\Large\Videos\*\*",  # added since: movies
+    R"S:\Large\Videos\**",  # added since
+    R"C:\Users\Senso\Large\Pictures\Temp\**",
+    R"S:\Large\Pictures\Temp\**",  # added since
     R"C:\Users\Senso\Large\Pictures\Lightroom\Lightroom Catalog Previews.lrdata\**",
     R"C:\Users\Senso\Large\Pictures\Lightroom\Lightroom Catalog Smart Previews.lrdata\**",
     R"C:\Users\Senso\CrossDevice\**",
@@ -26,7 +28,6 @@ ORIGINAL_EXCLUDES = [
     R"C:\Users\Senso\src\vcpkg\**",
     R"C:\Users\Senso\src\external\**",
     R"C:\Users\Senso\.vscode\extensions\**",
-    R"S:\rejected\**",
     R"S:\$RECYCLE.BIN\**",
     R"C:\Users\Senso\AppData\Local\*\*.db-snp-*",
     R"C:\Users\Senso\AppData\Local\*\*.db-pre-*",

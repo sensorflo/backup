@@ -143,7 +143,7 @@ unfinished albums, to this drive's `pictures-new\to-secondary`), and update-clou
 
 ## Update the secondary (in the office)
 
-On the office laptop, which needs only Python (3.12 or newer) and restic:
+On the office laptop, which needs only Python (3.11 or newer) and restic:
 
 1. Connect both drives: the primary and the secondary one.
 2. `python {pyz} update-secondary` copies the snapshots, then runs `albumflow.pyz update-secondary`

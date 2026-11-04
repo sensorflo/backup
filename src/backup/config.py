@@ -184,12 +184,15 @@ def excludes():
         _join(home, "NTUSER.DAT*"),
         R"**\.dtrash\**", # darktable trash
 
-        # Complete folders
-        _join(home, R"Large\Pictures\Temp\**"),
         # Movies (albumflow's movie-* commands): in Large\Videos, Store and Downloading (qBittorrent) hold them, and
         # Videos is the view, junctions named canonically, recreated by albumflow. Everything below the first level
         # is left out; small files there like the README are kept.
         _join(home, R"Large\Videos\*\*"),
+        _join(sd, R"Large\Videos\**"),
+
+        # Complete folders
+        _join(home, R"Large\Pictures\Temp\**"),
+        _join(sd, R"Large\Pictures\Temp\**"),
         _join(home, R"Large\Pictures\Lightroom\Lightroom Catalog Previews.lrdata\**"),
         _join(home, R"Large\Pictures\Lightroom\Lightroom Catalog Smart Previews.lrdata\**"),
         _join(home, R"CrossDevice\**"),
@@ -198,7 +201,6 @@ def excludes():
         _join(home, R"src\vcpkg\**"),
         _join(home, R"src\external\**"),
         _join(home, R".vscode\extensions\**"),
-        _join(sd, R"rejected\**"),
         _join(sd, R"$RECYCLE.BIN\**"),
 
         # Excludes from within APPDATA_INCLUDES
@@ -207,6 +209,7 @@ def excludes():
         _join(home, R"AppData\Roaming\Adobe\CameraRaw\ModelZoo\**"), # downloaded AI models, ~1GB
         _join(home, R"AppData\Roaming\Adobe\CameraRaw\Logs\**"),
         _join(home, R"AppData\Roaming\syntevo\SmartGit\updates\**"),
+        
         # Locked while the program runs, making restic fail on them
         _join(home, R"AppData\Roaming\syntevo\SmartGit\*\logs\**"),
         _join(home, R"AppData\Roaming\syntevo\SmartGit\*\*lock*"),

@@ -95,6 +95,13 @@ damaged repo is noticed long before a restore needs it. To decide:
   repo, like `secondary-latest-snapshot.json`.
 - How a failure is reported, so it can't be overlooked.
 
+## To do: the flaky test_free_space_of_cloud_drive
+
+`tests/test_cloud.py::test_free_space_of_cloud_drive` compares `cloud.free_space` with a second
+`shutil.disk_usage` of the same real drive (the test's temp folder, on C:), so it fails whenever something
+writes to that drive in between (seen 2026-11-04, e.g. while the other tests run in parallel). Make it not
+depend on the real free space, e.g. by faking `shutil.disk_usage` and checking which drive is asked.
+
 ## Moved to albumflow: making room on the drives
 
 Decided 2026-10-23, see albumflow's plan ("Purging albums from the backup drives"): an album may be purged
